@@ -73,8 +73,8 @@ Beginner
 - **Cloud provider:** CNV (default)
 - **Cluster type:** SNO (Single Node OpenShift)
 - **OCP version:** 4.20
-- **Topology:** TBD — confirmed in infrastructure phase
-- **Sizing:** TBD — confirmed in infrastructure phase
+- **Topology:** Per-student (one cluster per demo session)
+- **Sizing:** 1 control plane node (32 vCPU, 128GB RAM, 200GB disk); 0 worker nodes (SNO — control plane serves as worker)
 - **Automation approach:** Ansible + GitOps (Helm + ArgoCD)
 - **AI/MaaS:** None (OpenShift Lightspeed uses an external SaaS LLM; no on-cluster AI inference required)
 - **External services:** None
