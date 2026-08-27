@@ -1,0 +1,13 @@
+site_name: Container Management Demo
+docs_dir: publishing-house/spec
+nav:
+- Home: index.md
+- Design Spec: design.md
+- Modules:
+  - Module 1 - Console Overview: modules/module-01-console-overview.md
+  - Module 2 - Deploying Applications: modules/module-02-deploying-applications.md
+  - Module 3 - Secure By Default: modules/module-03-secure-by-default.md
+  - Module 4 - Cluster Operations: modules/module-04-cluster-operations.md
+  - Module 5 - Observability: modules/module-05-observability.md
+plugins:
+- techdocs-core
