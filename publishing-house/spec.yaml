@@ -114,7 +114,17 @@ approval_checklist:
     assessment_strategy: ""
     catalog_gap: ""
     design_overview: "A presenter-led demo covering OpenShift Container Platform across five chapters: console navigation, application deployment via Operators and Helm, security controls (SCCs, RBAC, NetworkPolicy), cluster lifecycle operations including OTA upgrades and AI-assisted troubleshooting with Lightspeed, and observability using Prometheus, LokiStack, and the Troubleshooting Panel. Runs on a pre-provisioned SNO cluster; presenters select 2-3 chapters per session (~90-120 min) from a full ~235-min catalog."
-    module_summaries: []
+    module_summaries:
+      - title: "Console Overview"
+        overview: "Orients the audience to the OpenShift web console by walking through Developer and Administrator perspectives, the Main Dashboard, Events page, Software Catalog, Topology view, embedded web terminal, user management, and guided Quick Starts."
+      - title: "Deploying Applications"
+        overview: "Demonstrates three deployment patterns — Crunchy PostgreSQL via OperatorHub (operator-managed stateful service), SQL Server via a custom Helm chart, and the Online Boutique microservices demo to illustrate workload portability onto OpenShift."
+      - title: "Secure by Default"
+        overview: "Shows OpenShift's layered security model through Security Context Constraints (kernel-level pod restrictions), Role-Based Access Control (namespace-scoped permissions), and NetworkPolicy (east-west traffic isolation between application namespaces)."
+      - title: "Cluster Operations"
+        overview: "Covers day-2 operations: a full-stack OTA upgrade via CVO and MCO, a self-healing demonstration through continuous reconciliation, and AI-assisted troubleshooting with OpenShift Lightspeed using natural-language queries against live cluster state."
+      - title: "Observability"
+        overview: "Demonstrates the integrated observability stack: Prometheus dashboards and Alertmanager for metrics, LokiStack with MinIO for centralized log aggregation, and the Troubleshooting Panel (Korrel8r + Cluster Observability Operator) for correlated signal navigation."
     rcars_overlap_pct: null
     rcars_top_matches: []
     rejections: []
