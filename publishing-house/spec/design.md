@@ -7,7 +7,7 @@ This presenter-led demo showcases Red Hat OpenShift Container Platform as a comp
 ## Target Audience
 
 - **Role:** Sales engineers and technical presenters
-- **Experience level:** Intermediate (presenter); low-to-medium (audience watching the demo)
+- **Experience level:** Beginner (Account SAs, SSPs); low technical depth assumed
 - **What they already know:** Basic container and Kubernetes concepts, Red Hat product portfolio at a high level, cluster-admin access on a pre-provisioned SNO cluster
 - **What they don't know:** OpenShift-specific console workflows, operator-driven deployments, OCP security primitives (SCCs, RBAC, NetworkPolicy), OTA upgrade flow, LokiStack/Korrel8r integration, and OpenShift Lightspeed AI-assisted troubleshooting
 
@@ -60,7 +60,7 @@ Demo (presenter-led)
 
 ## Difficulty Level
 
-Intermediate
+Beginner
 
 ## Environment
 
@@ -77,5 +77,5 @@ Intermediate
 - **Sizing:** TBD — confirmed in infrastructure phase
 - **Automation approach:** Ansible + GitOps (Helm + ArgoCD)
 - **AI/MaaS:** None (OpenShift Lightspeed uses an external SaaS LLM; no on-cluster AI inference required)
-- **External services:** LLM provider API (OpenAI, Azure OpenAI, or IBM watsonx) for Lightspeed; mpbravo.github.io (custom Helm repositories for SQL Server and MinIO); Red Hat OSUS (update graph)
+- **External services:** None
 - **Non-GA products:** Cluster Observability Operator 1.x (Technology Preview — access via standard OperatorHub channel)

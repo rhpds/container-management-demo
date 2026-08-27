@@ -78,14 +78,11 @@ spec:
     non_ga_products:
       - "Cluster Observability Operator 1.x (Technology Preview)"
     non_ga_access_plan: "Available via standard OperatorHub channel"
-    external_services:
-      - "LLM provider API (OpenAI, Azure OpenAI, or IBM watsonx) — required for OpenShift Lightspeed"
-      - "mpbravo.github.io — custom Helm repositories (SQL Server, MinIO)"
-      - "Red Hat OSUS — cluster update graph"
+    external_services: []
     gpu_nodes: 0                       # number of GPU nodes (0 = none)
     gpu_type: ""                       # e.g. NVIDIA A100 40GB (required if gpu_nodes > 0)
   duration_hours: null
-  audience: "intermediate"   # beginner | intermediate | advanced
+  audience: "beginner"       # beginner | intermediate | advanced
 
 development:
   automation:
