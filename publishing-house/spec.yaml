@@ -20,18 +20,43 @@ project:
   workflow_id: "872d5db8-66ee-47ce-9f30-7924e92c3b40"
 
 spec:
-  title: ""
-  learning_objectives: []
-  modules: []              # [{id, title, duration_min}] — written by intake Phase 4; id is stable (e.g. module-01)
+  title: "Container Management Demo"
+  learning_objectives:
+    - "Demonstrate OpenShift Console capabilities across multiple perspectives, including topology views, the embedded web terminal, the Software Catalog, quick starts, and user management"
+    - "Deploy applications on OpenShift using Operators (Crunchy PostgreSQL), Helm Charts (SQL Server), and existing containerized workloads (Online Boutique)"
+    - "Demonstrate OpenShift security controls by walking through Security Context Constraints, Role-Based Access Control, and network policy enforcement"
+    - "Demonstrate cluster lifecycle operations including a full-stack OTA upgrade, self-healing through continuous reconciliation, and AI-assisted troubleshooting with OpenShift Lightspeed"
+    - "Observe and correlate cluster signals using Prometheus monitoring, LokiStack centralized logging, and the Troubleshooting Panel"
+  modules:
+    - id: module-01
+      title: "Console Overview"
+      duration_min: 45
+      status: not_started
+    - id: module-02
+      title: "Deploying Applications"
+      duration_min: 45
+      status: not_started
+    - id: module-03
+      title: "Secure by Default"
+      duration_min: 45
+      status: not_started
+    - id: module-04
+      title: "Cluster Operations"
+      duration_min: 45
+      status: not_started
+    - id: module-05
+      title: "Observability"
+      duration_min: 55
+      status: not_started
   environment:
-    platform: ""               # ocp | rhel-vms — determines which sizing fields apply
+    platform: "ocp"            # ocp | rhel-vms — determines which sizing fields apply
     topology: ""               # shared-cluster | per-student | cnv-pool
     cloud_provider: cnv        # cnv | aws | troshka — cnv is default
     max_concurrent_users: null # required if topology = shared-cluster
 
     # --- OCP-specific fields (only when platform = ocp) ---
-    ocp_version: ""                    # e.g. 4.20 — minimum 4.20; leave empty for rhel-vms
-    cluster_type: ""                   # sno | multinode — only for platform = ocp
+    ocp_version: "4.20"                # e.g. 4.20 — minimum 4.20; leave empty for rhel-vms
+    cluster_type: "sno"                # sno | multinode — only for platform = ocp
     control_plane_instance_count: null # 1 if sno, 3 if multinode
     control_plane_cpu: null            # 32 if sno, 16 if multinode
     control_plane_ram_gb: null         # 128 if sno, 64 if multinode
@@ -46,17 +71,21 @@ spec:
 
     # --- Common fields (both platforms) ---
     aap_version: ""                    # required if AAP in products
-    ai_requirement: ""                 # maas | gpu | none
+    ai_requirement: "none"             # maas | gpu | none
     ai_model_tier: ""                  # open-source | frontier (if ai_requirement = maas or gpu)
     ai_model_name: ""                  # specific model e.g. granite-3.1-8b
     ai_justification: ""               # required if ai_model_tier = frontier or ai_requirement = gpu
-    non_ga_products: []                # list of non-GA products/versions
-    non_ga_access_plan: ""             # how access is provided for non-GA products
-    external_services: []              # named external service dependencies e.g. [github.com]
+    non_ga_products:
+      - "Cluster Observability Operator 1.x (Technology Preview)"
+    non_ga_access_plan: "Available via standard OperatorHub channel"
+    external_services:
+      - "LLM provider API (OpenAI, Azure OpenAI, or IBM watsonx) — required for OpenShift Lightspeed"
+      - "mpbravo.github.io — custom Helm repositories (SQL Server, MinIO)"
+      - "Red Hat OSUS — cluster update graph"
     gpu_nodes: 0                       # number of GPU nodes (0 = none)
     gpu_type: ""                       # e.g. NVIDIA A100 40GB (required if gpu_nodes > 0)
   duration_hours: null
-  audience: ""               # beginner | intermediate | advanced
+  audience: "intermediate"   # beginner | intermediate | advanced
 
 development:
   automation:
@@ -81,10 +110,10 @@ tracking:
 approval_checklist:
 
   content:
-    prerequisites_verifiable: null
+    prerequisites_verifiable: false
     assessment_strategy: ""
     catalog_gap: ""
-    design_overview: ""
+    design_overview: "A presenter-led demo covering OpenShift Container Platform across five chapters: console navigation, application deployment via Operators and Helm, security controls (SCCs, RBAC, NetworkPolicy), cluster lifecycle operations including OTA upgrades and AI-assisted troubleshooting with Lightspeed, and observability using Prometheus, LokiStack, and the Troubleshooting Panel. Runs on a pre-provisioned SNO cluster; presenters select 2-3 chapters per session (~90-120 min) from a full ~235-min catalog."
     module_summaries: []
     rcars_overlap_pct: null
     rcars_top_matches: []
