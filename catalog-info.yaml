@@ -3,8 +3,8 @@ kind: Component
 metadata:
   name: container-management-demo
   title: container-management-demo
-  description: This demo is designed to help you understand the key features and
-    capabilities of OpenShift as a Container Management Platform.
+  description: This demo is designed to help you understand the key features and capabilities
+    of OpenShift as a Container Management Platform.
   annotations:
     ph.rhdp.io/content-type: demo
     ph.rhdp.io/deployment-mode: rhdp_published
@@ -13,22 +13,25 @@ metadata:
     ph.rhdp.io/migrated-repo: https://github.com/mpbravo/showroom_container-management-demo
     backstage.io/techdocs-ref: dir:.
     github.com/project-slug: rhpds/container-management-demo
-    ph.rhdp.io/created-at: 2026-08-27T14:23:34.082Z
+    ph.rhdp.io/created-at: 2026-08-27 14:23:34.082000+00:00
   tags:
-    - publishing-house
-    - demo
-    - rhdp-published
-    - migration
+  - publishing-house
+  - demo
+  - rhdp-published
+  - migration
   links:
-    - url: https://github.com/rhpds/container-management-demo
-      title: Repository
-      icon: github
-    - url: https://devspaces.apps.ocpv-infra02.wdc07.infra.demo.redhat.com#https://github.com/rhpds/container-management-demo
-      title: Open in DevSpaces
-      icon: catalog
-    - url: https://central-api-publishing-house.apps.ocpv-infra02.wdc07.infra.demo.redhat.com
-      title: Central
-      icon: dashboard
+  - url: https://github.com/rhpds/container-management-demo
+    title: Repository
+    icon: github
+  - url: https://devspaces.apps.ocpv-infra02.wdc07.infra.demo.redhat.com#https://github.com/rhpds/container-management-demo
+    title: Open in DevSpaces
+    icon: catalog
+  - url: https://central-api-publishing-house.apps.ocpv-infra02.wdc07.infra.demo.redhat.com
+    title: Central
+    icon: dashboard
+  - url: https://redhat.atlassian.net/browse/RHDPCD-1351
+    title: Jira Epic
+    icon: dashboard
 spec:
   type: content
   lifecycle: experimental

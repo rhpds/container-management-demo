@@ -16,8 +16,8 @@ project:
   automation_type: "both"
   description: "This demo is designed to help you understand the key features and capabilities of OpenShift as a Container Management Platform."
   # content_reviewer_email and infra_reviewer_email are assigned by the RHDP team — not set by the author
-  jira_ticket: ""
-  workflow_id: ""
+  jira_ticket: "RHDPCD-1351"
+  workflow_id: "872d5db8-66ee-47ce-9f30-7924e92c3b40"
 
 spec:
   title: ""
