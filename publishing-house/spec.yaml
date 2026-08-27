@@ -109,7 +109,7 @@ approval_checklist:
   content:
     prerequisites_verifiable: false
     assessment_strategy: ""
-    catalog_gap: ""
+    catalog_gap: "This is the only beginner-level, presenter-led demo covering OCP platform fundamentals breadth-first — console experience, multi-pattern app deployment (Operator + Helm), security primitives, cluster operations, and the full observability stack — packaged for Account SAs and SSPs. The closest catalog item targets intermediate ops practitioners and lacks the Lightspeed, OTA upgrade, and end-to-end narrative structure."
     design_overview: "A presenter-led demo covering OpenShift Container Platform across five chapters: console navigation, application deployment via Operators and Helm, security controls (SCCs, RBAC, NetworkPolicy), cluster lifecycle operations including OTA upgrades and AI-assisted troubleshooting with Lightspeed, and observability using Prometheus, LokiStack, and the Troubleshooting Panel. Runs on a pre-provisioned SNO cluster; presenters select 2-3 chapters per session (~90-120 min) from a full ~235-min catalog."
     module_summaries:
       - title: "Console Overview"
@@ -122,8 +122,42 @@ approval_checklist:
         overview: "Covers day-2 operations: a full-stack OTA upgrade via CVO and MCO, a self-healing demonstration through continuous reconciliation, and AI-assisted troubleshooting with OpenShift Lightspeed using natural-language queries against live cluster state."
       - title: "Observability"
         overview: "Demonstrates the integrated observability stack: Prometheus dashboards and Alertmanager for metrics, LokiStack with MinIO for centralized log aggregation, and the Troubleshooting Panel (Korrel8r + Cluster Observability Operator) for correlated signal navigation."
-    rcars_overlap_pct: null
-    rcars_top_matches: []
+    rcars_overlap_pct: 78
+    rcars_top_matches:
+      - title: "OpenShift Ops Day Roadshow"
+        ci_name: "published.openshift-days-ops-track.prod"
+        url: "https://catalog.demo.redhat.com/catalog?item=published.openshift-days-ops-track.prod"
+        relevance_score: 78
+        why_it_fits: "Covers SCCs, RBAC, NetworkPolicy, self-healing/reconciliation, Prometheus monitoring, LokiStack logging, and application deployment on OCP 4.x — strong topic overlap."
+        workloads:
+          - role: "ocp4_workload_cert_manager"
+            collection: "agnosticd.core_workloads"
+          - role: "ocp4_workload_external_odf"
+            collection: "agnosticd.core_workloads"
+      - title: "OpenShift Lightspeed Demo"
+        ci_name: "published.ocp4-lightspeed.prod"
+        url: "https://catalog.demo.redhat.com/catalog?item=published.ocp4-lightspeed.prod"
+        relevance_score: 58
+        why_it_fits: "Directly covers OpenShift Lightspeed AI-assisted troubleshooting including Prometheus and Alertmanager integration; presenter-led walkthrough suited for Account SAs and SSPs."
+        workloads:
+          - role: "ocp4_workload_authentication_htpasswd"
+            collection: "agnosticd.core_workloads"
+          - role: "ocp4_workload_lightspeed_demo"
+            collection: "rhpds.openshift_lightspeed_demo"
+          - role: "ocp4_workload_ols"
+            collection: "agnosticd.ai_workloads"
+          - role: "ocp4_workload_showroom"
+            collection: "agnosticd.core_workloads"
+      - title: "Accelerating Infrastructure Modernization with OpenShift Virtualization"
+        ci_name: "published.ocp-virt-modernize.prod"
+        url: "https://catalog.demo.redhat.com/catalog?item=published.ocp-virt-modernize.prod"
+        relevance_score: 52
+        why_it_fits: "Includes OpenShift Lightspeed and some overlapping OCP concepts; intermediate-level but shares self-healing reconciliation and Lightspeed troubleshooting topics."
+        workloads:
+          - role: "ocp4_workload_ols"
+            collection: "agnosticd.ai_workloads"
+          - role: "ocp4_workload_openshift_gitops"
+            collection: "agnosticd.core_workloads"
     rejections: []
 
   infra:
