@@ -19,17 +19,17 @@ This chapter orients the audience to the OpenShift web console and establishes t
 
 ## Lab Structure
 
-| Section | Duration |
-|---------|----------|
-| The different perspectives in the OpenShift Console | 5 min |
-| The Main Dashboard | 5 min |
-| The Events page | 10 min |
-| The Software Catalog | 10 min |
-| The Topology view | 5 min |
-| The embedded web terminal | 10 min |
-| The user management | 10 min |
-| Quick Starts | 10 min |
-| **Chapter total** | **~65 min (content); ~45 min (curated)** |
+| No. | Section | Duration |
+|-----|---------|----------|
+| 1 | The different perspectives in the OpenShift Console | 5 min |
+| 2 | The Main Dashboard | 5 min |
+| 3 | The Events page | 10 min |
+| 4 | The Software Catalog | 10 min |
+| 5 | The Topology view | 5 min |
+| 6 | The embedded web terminal | 10 min |
+| 7 | The user management | 10 min |
+| 8 | Quick Starts | 10 min |
+| — | **Chapter total** | **~65 min (content); ~45 min (curated)** |
 
 > Note: The chapter contains ~65 min of material. The ~45 min curated duration reflects a typical presenter's selection of the most impactful sections.
 

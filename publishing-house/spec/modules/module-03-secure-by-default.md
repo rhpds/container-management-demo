@@ -17,12 +17,12 @@ This chapter demonstrates OpenShift's layered security model, which enforces saf
 
 ## Lab Structure
 
-| Section | Duration |
-|---------|----------|
-| Security and Compliance / Security Context Constraints (SCCs) | 15 min |
-| Role-Based Access Control (RBAC) | 15 min |
-| Introduction to network security (NetworkPolicy) | 20 min |
-| **Chapter total** | **~50 min (content); ~45 min (curated)** |
+| No. | Section | Duration |
+|-----|---------|----------|
+| 1 | Security and Compliance / Security Context Constraints (SCCs) | 15 min |
+| 2 | Role-Based Access Control (RBAC) | 15 min |
+| 3 | Introduction to network security (NetworkPolicy) | 20 min |
+| — | **Chapter total** | **~50 min (content); ~45 min (curated)** |
 
 ## Key Takeaways
 

@@ -17,12 +17,12 @@ This chapter demonstrates three distinct application deployment patterns availab
 
 ## Lab Structure
 
-| Section | Duration |
-|---------|----------|
-| Using Operators — Crunchy PostgreSQL (OperatorHub install + cluster provisioning) | 30 min |
-| Using Helm Charts — SQL Server (custom Helm repo, values override) | 10 min |
-| Deploying existing applications — Online Boutique (import YAML / Helm deploy) | 10 min |
-| **Chapter total** | **~50 min (content); ~45 min (curated)** |
+| No. | Section | Duration |
+|-----|---------|----------|
+| 1 | Using Operators — Crunchy PostgreSQL (OperatorHub install + cluster provisioning) | 30 min |
+| 2 | Using Helm Charts — SQL Server (custom Helm repo, values override) | 10 min |
+| 3 | Deploying existing applications — Online Boutique (import YAML / Helm deploy) | 10 min |
+| — | **Chapter total** | **~50 min (content); ~45 min (curated)** |
 
 > Note: The Crunchy PostgreSQL section is the most hands-on portion of the chapter. Operator installation and cluster provisioning can be parallelized by starting the install and moving to the next section while the operator reconciles.
 
