@@ -17,12 +17,12 @@ This chapter focuses on OpenShift's day-2 operational story: keeping clusters up
 
 ## Lab Structure
 
-| Section | Duration |
-|---------|----------|
-| Full-Stack OTA Upgrades (CVO + MCO + RHCOS) | 15 min |
-| Self-Healing by Design — Continuous Reconciliation (simulated drift + recovery) | 15 min |
-| Intelligent Cluster Troubleshooting — OpenShift Lightspeed (NL query demo) | 20 min |
-| **Chapter total** | **~50 min (content); ~45 min (curated)** |
+| No. | Section | Duration |
+|-----|---------|----------|
+| 1 | Full-Stack OTA Upgrades (CVO + MCO + RHCOS) | 15 min |
+| 2 | Self-Healing by Design — Continuous Reconciliation (simulated drift + recovery) | 15 min |
+| 3 | Intelligent Cluster Troubleshooting — OpenShift Lightspeed (NL query demo) | 20 min |
+| — | **Chapter total** | **~50 min (content); ~45 min (curated)** |
 
 ## Key Takeaways
 

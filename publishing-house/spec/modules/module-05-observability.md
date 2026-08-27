@@ -18,12 +18,12 @@ This chapter demonstrates OpenShift's integrated observability stack, covering m
 
 ## Lab Structure
 
-| Section | Duration |
-|---------|----------|
-| Monitoring with Prometheus (dashboards, alerts, Thanos Querier) | 20 min |
-| Centralized logging with LokiStack (Loki Operator install, MinIO S3 config, log queries) | 30 min |
-| Correlating signals with the Troubleshooting Panel (Korrel8r, Cluster Observability Operator) | 15 min |
-| **Chapter total** | **~65 min (content); ~55 min (curated)** |
+| No. | Section | Duration |
+|-----|---------|----------|
+| 1 | Monitoring with Prometheus (dashboards, alerts, Thanos Querier) | 20 min |
+| 2 | Centralized logging with LokiStack (Loki Operator install, MinIO S3 config, log queries) | 30 min |
+| 3 | Correlating signals with the Troubleshooting Panel (Korrel8r, Cluster Observability Operator) | 15 min |
+| — | **Chapter total** | **~65 min (content); ~55 min (curated)** |
 
 > Note: The chapter contains ~65 min of material. The ~55 min curated duration reflects a typical presenter's pacing with pre-staged LokiStack components.
 
