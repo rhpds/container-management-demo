@@ -1,0 +1,39 @@
+= Deploying existing applications - Online Boutique
+
+== Demo flow
+
+=== Know
+Frame this scenario as a fast path for onboarding existing microservices applications onto OpenShift.
+
+=== Show
+Demonstrate Helm-based deployment and application visualization to validate operational readiness.
+
+The https://github.com/GoogleCloudPlatform/microservices-demo[Online Boutique] (formerly known as Hipster Shop) is a cloud-native, microservices-based demo application created by Google Cloud. It is widely used by developers and architects to learn how to build, deploy, and manage complex, modern applications.
+
+We have a Helm chart to deploy this application. It is a complex, cloud native, microservices based application to illustrate how to deploy and manage these types of applications in OpenShift.
+
+Create a new project to deploy this application.
+
+Go to `Helm` -> `Repositories` and click on `Create Helm Repository`.
+
+Fill out the following data:
+
+* Scope Type: `Cluster scoped`
+* Name: `online-boutique-charts`
+* URL: https://mpbravo.github.io/online-boutique-helm/
+
+Go to `Ecosystem` -> `Software Catalog`
+
+Filter by `Helm Charts`, and in `Helm Repositories`, select the one we have just created. The Online Boutique should show up.
+
+image::helm-chart-boutique.png[Online Boutique Helm Chart,1000,1000]
+
+Click on the `Online Boutique` Helm Chart and click on `Create`.
+
+After a few moments, the application should show in the `Topology` view. You can also test it by clicking on `Networking` -> `Routes` and accessing the web interface.
+
+image::online-boutique.png[Online Boutique Topology,1000,1000]
+
+NOTE: At the moment, the topology view in the dark mode has not enough contrast to display the connections between the components
+
+

@@ -1,0 +1,179 @@
+= Introduction to network security
+
+== Demo flow
+
+=== Know
+Explain why network segmentation is critical for blast-radius control and zero-trust alignment.
+
+=== Show
+Demonstrate policy behavior and traffic outcomes that prove workload isolation in practice.
+
+== Network Policies
+
+In OpenShift, network policies are tools used to secure your network by controlling the flow of traffic at the IP address or port level between pods and other network endpoints. They apply to the Transmission Control Protocol (TCP), User Datagram Protocol (UDP), Internet Control Message Protocol (ICMP), and Stream Control Transmission Protocol (SCTP) protocols.
+
+OpenShift supports network policies at two primary scopes:
+
+*Namespace-Scoped Network Policies* 
+
+Standard `NetworkPolicy` objects operate at the namespace (project) level and are typically managed by developers or project administrators.
+
+    * *Default-deny stance*: By default, all pods in a project can freely communicate with each other and external endpoints. However, once you apply a `NetworkPolicy` to a pod, it adopts a "default-deny" stance, meaning it will reject any connection that is not explicitly allowed by a policy rule.
+
+    * *Additive rules*: Network policies are additive, meaning you can combine multiple policies together to satisfy complex requirements; a pod will accept connections allowed by at least one of its matching policies.
+
+    * *Project templates*: Cluster administrators can modify default project templates to automatically include predefined network policies whenever a new project is created.
+
+*Cluster-Scoped Administrative Network Policies* 
+
+Administrators can use `AdminNetworkPolicy` (ANP) and `BaselineAdminNetworkPolicy` (BANP) APIs to define cluster-wide network security configurations.
+
+    * *AdminNetworkPolicy*: These policies have a higher priority than standard network policies and enforce cluster-wide security rules that regular users cannot override. They can be configured with an explicit "Allow" or "Deny" action to guarantee connection states, or they can use a "Pass" action to explicitly delegate the policy decision down to the namespace-level `NetworkPolicy` layer.
+
+    * *BaselineAdminNetworkPolicy*: This applies a sensible baseline level of network security across the cluster that only takes effect when no other network policy overrides it
+
+== Demonstration
+
+This work is based on https://github.com/ralvares/openshift-security-framework/blob/main/labs/basic/b4.adoc 
+
+. Create a new project to host the demo, for instance `demo-security`
+
+. Create a new deployment with the following data:
+
+. Name: `api`
+
+. Image: `registry.access.redhat.com/ubi9/python-311`
+
+.. Replicas: `1` (expand Advanced Options to configure)
+
+.. Change to yaml view to add the command to execute in the pod:
++
+--
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: demo-security
+  name: api
+  annotations: {}
+spec:
+  selector:
+    matchLabels:
+      app: api
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: container
+          image: registry.access.redhat.com/ubi9/python-311
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env: []
+          command: ["python3"]
+          args: ["-m", "http.server", "8080"]
+      imagePullSecrets: []
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+  paused: false
+----
+--
+. Create a service to expose the deployment. Go to `Networking` -> `Services` and copy the following yaml:
++
+--
+[source,yaml]
+----
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+  namespace: demo-security
+  labels:
+    app: api
+spec:
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  internalTrafficPolicy: Cluster
+  type: ClusterIP
+  ipFamilyPolicy: SingleStack
+  sessionAffinity: None
+  selector:
+    app: api
+----
+--
+. Create a new pod with the following data:
+.. Access the yaml view and paste the following:
++
+--
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: client-allowed
+  labels:
+    role: allowed
+spec:
+  containers:
+  - name: ubi-container
+    image: registry.access.redhat.com/ubi9/ubi
+    command: ["sleep"]
+    args: ["infinity"]
+----
+--
+. Create a second pod with the following data:
+.. Access the yaml view and paste the following:
++
+--
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: client-denied
+  labels:
+    role: denied
+spec:
+  containers:
+  - name: ubi-container
+    image: registry.access.redhat.com/ubi9/ubi
+    command: ["sleep"]
+    args: ["infinity"]
+----
+--
+. Try to access the deployment from the two pods:
+.. Access the terminal in the pod `client-allowed` and execute this command: `curl -s -o /dev/null -w '%{http_code}\n' http://api-service:8080`
+.. Do the same with the pod `client-denied`.
+.. Both should succeed with a `200` code.
+. Now create a new network policy. Go to `Networking` -> `Network Policies` and fill out the form with this data:
+.. Name: `default-deny-ingress`
+.. Policy type: check `Deny all ingress traffic`
++
+image::network-policies.png[Network Policies,1000,1000]
+
+. Test the connections again to see that they are now blocked (timeout should be expected after 3 seconds):
+.. Access the terminal in the pod `client-allowed` and execute this command: `curl -s --max-time 3 -o /dev/null http://api-service:8080`
+.. Do the same in the pod `client-denied`
+.. Now all connections are denied.
+. The next step is to allow connections from one client only. Create a new Network Policy with the following data:
+.. Name: `allow-api-from-allowed`
+.. Pod selector: `label=app, value=api`
+.. Check pods affected by the pod selector and verify that the api pod is there
+.. Expand `Ingress` and add an ingress rule. 
+.. Select `Allow traffic from pods in the same namespace. Key=role, Value=allowed`
+.. Click `Create`
+. Test again the same connections as before, `client-allowed` should succeed and `client-denied` should fail.
+.. Access the terminal in the pod client-allowed and run this command: `curl -s -o /dev/null -w '%{http_code}\n' http://api-service:8080`
+.. Access the terminal in the pod client-denied and run this command: `curl -s --max-time 3 -o /dev/null http://api-service:8080`
+.. Access the terminal in the pod client-denied and run this command: `curl -s --max-time 3 -o /dev/null http://api-service:8080`
+
+

@@ -1,0 +1,72 @@
+= Using Helm Charts - SQL Server
+
+== Demo flow
+
+=== Know
+Clarify where Helm fits in a platform strategy and when chart-based delivery is the right operational choice.
+
+=== Show
+Demonstrate repository onboarding and release deployment to illustrate repeatable application packaging.
+
+Operators and Helm are not mutually exclusive; in a mature OpenShift environment, they often function as a layered stack. While Helm is the best tool for "Day 1" (packaging and templating), Operators are the masters of "Day 2" (ongoing state management).
+
+In many organizations, the choice depends on the nature of the workload:
+
+* *Use Helm for Stateless Apps*: For simple web frontends or APIs where "Day 2" is just "restart if it crashes," Helm is more than enough. It provides versioning, easy rollbacks, and environment-specific variable injection.
+
+* *Use Operators for Stateful Apps*: For databases (Postgres, MongoDB) or complex middleware (Kafka/Confluent), an Operator is essential. It understands the application's internal state—knowing, for instance, that it shouldn't reboot a database node while a backup is in progress.
+
+This is just an example of a Helm chart for SQL Server for illustration purposes. It is based on Microsoft official documentation to deploy SQL Server container clusters.
+
+First, create a new project to deploy SQL Server. Go to `Home` -> `Projects` and create a new project.
+
+Go to `Helm` -> `Repositories` and click on `Create Helm Repository`    .
+
+Fill out the following data:
+
+* Scope Type: `Cluster scoped`
+* Name: `sqlserver-helm-charts`
+* URL: https://mpbravo.github.io/helm-charts/
+
+image::create-helm-repository.png[Create Helm Repository,1000,1000]
+
+Go to `Ecosystem` -> `Software Catalog`
+
+Filter by `Helm Charts`, and in `Helm Repositories`, select the one we have just created. The SQL Server should show up.
+
+image::helm-charts.png[Software Catalog Helm Charts,1000,1000]
+
+Click on the SQL Server Helm Chart and click on `Create`.
+
+Expand the form and add the SA password for the new database. Then click on `Create`.
+
+image::create-helm-release.png[Create SQL Server,1000,1000]
+
+If everything is ok, then you will be redirected to the Topology view with the SQL Server pod running.
+
+You can verify the service is exposed by checking the port from the embedded web terminal:
+
+[source,bash,role="execute"]
+----
+oc get services
+----
+
+NOTE: Connecting to the database requires the `sqlcmd` CLI, which is not pre-installed on most presenter laptops. For a live demo, **skip the connection test** and instead navigate to `Workloads → Pods`, open the SQL Server pod's terminal in the console, and run `sqlcmd` there — it is included in the SQL Server container image itself. Node ports are disallowed in most customer environments and are shown here only as a reference.
+
+Check that the server is alive:
+
+--
+[source,bash]
+----
+1> SELECT @@VERSION;
+2> GO
+                                                                                                                                                                                                                                                                                                            
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Microsoft SQL Server 2022 (RTM-CU23) (KB5078297) - 16.0.4236.2 (X64) 
+        Jan 22 2026 17:50:56 
+        Copyright (C) 2022 Microsoft Corporation
+        Developer Edition (64-bit) on Linux (Ubuntu 22.04.5 LTS) <X64>                                                                                                      
+
+(1 rows affected)
+----
+--

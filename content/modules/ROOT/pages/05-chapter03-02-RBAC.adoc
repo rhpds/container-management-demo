@@ -1,0 +1,102 @@
+= Role Based Access Control (RBAC)
+
+== Demo flow
+
+=== Know
+Position RBAC as the foundation for tenant isolation, least privilege, and controlled delegation.
+
+=== Show
+Demonstrate role and binding workflows that enforce access boundaries without slowing delivery teams.
+
+== Introduction
+
+*Role-Based Access Control (RBAC)* in OpenShift is a fundamental security mechanism that determines whether a user, group, or service account is allowed to perform a specific action within a project or the cluster. By applying RBAC to Kubernetes namespaces, OpenShift ensures that multitenant applications remain securely isolated from one another.
+Authorization in OpenShift is governed by three primary objects:
+
+* *Rules*: Sets of permitted actions (verbs) on specific objects. For example, a rule dictates whether a user can "create" or "get" pods.
+    
+* *Roles*: Collections of rules. A single role can contain multiple rules that specify exactly which actions and resources are allowed.
+
+* *Bindings*: The explicit associations that link a user, group, or service account to a particular role.
+
+*Levels of RBAC*
+
+OpenShift evaluates authorization using a two-level hierarchy:
+
+* *Cluster RBAC*: These roles and bindings apply cluster-wide across all projects. A cluster role binding can only reference a cluster role.
+
+* *Local RBAC*: These roles and bindings are scoped to a specific project. While local roles exist only within a single project, a local role binding can reference either a local role or a cluster role. This structure allows administrators to reuse common cluster roles across multiple projects while maintaining the flexibility to customize access inside individual projects through local roles.
+
+*Default Cluster Roles*
+
+OpenShift includes a set of pre-configured default cluster roles that can be bound to users locally or cluster-wide. It is highly recommended not to manually modify these default cluster roles, as altering them can break cluster functionality. Common default roles include:
+
+* `cluster-admin`: A super-user role that can perform any action in any project. When bound locally, it grants full control over every action and resource, including quotas, within that project.
+    
+* `admin`: A project manager role. If used in a local binding, an admin can view and modify any resource in the project except for the resource quota.
+    
+* `basic-user`: A user that can retrieve basic information about projects and other users.    
+
+* `cluster-status`: A user that can view basic cluster status information.
+    
+* `edit` and `view`: Default OpenShift roles that grant standard read/write or read-only access to project resources.
+
+== Demonstration
+
+*Demo Objectives:*
+
+. Create a new Project (Namespace) for a development team.
+
+. Assign a developer restricted access to that specific project.
+
+. Verify the restrictions by logging in as the developer to show they cannot alter infrastructure outside their sandbox.
+
+Log into the OpenShift Web Console.
+
+. Look at the top left corner of the screen and ensure the dropdown is set to the *Core Platform* perspective.
+
+. In the navigation menu, go to `Home` -> `Projects`.
+
+. Click the blue `Create Project` button on the right side.
+
+. Name the project `finance-frontend` and click `Create`.
+
+Instead of crafting a complex RoleBinding YAML file, we will use OpenShift's built-in User Management interface to bind a pre-existing edit role to our user.
+
+. In the left navigation menu, expand the `User Management` section and click on `RoleBindings`.
+
+. At the top of the page, ensure your project filter dropdown is set to the project we just created: `finance-frontend`.
+
+. Click the `Create Binding` button.
+
+. Set the following fields in the wizard interface:
+
+    * *Binding Type*: Namespace-wide role binding (RoleBinding)
+
+    * *Name*: `finance-developer-edit-binding`
+
+    * *Namespace*: `finance-frontend` (automatically set)
+
+    * *Role Name*: Select `edit` from the dropdown list. (This built-in role allows users to deploy apps, pods, and routes but bars them from altering security settings or quotas).
+
+    * *Subject*: `User`
+
+    * *Subject Name*: `dev-bob` (Type the username of the developer account your enterprise identity provider maps).
+
+. Click `Create`.
+
+You will now see your newly created binding in the list, visually confirming that dev-bob is tied to the edit role within this scope.
+
+Now, let's step into the shoes of the developer to witness the strict boundaries enforced by the RBAC framework by using the Impersonation feature.
+
+. In the top right corner of the screen, click on the user icon and select `Impersonate User`.
+
+. Select `dev-bob` from the dropdown list and click `Impersonate`.
+
+. You will now see the OpenShift console as if you were logged in as `dev-bob`.
+
+. Click on the Project dropdown at the top.
+
+. The Result: `dev-bob` can see `finance-frontend` perfectly, but all other business namespaces or core infrastructure projects are invisible to him.
+
+

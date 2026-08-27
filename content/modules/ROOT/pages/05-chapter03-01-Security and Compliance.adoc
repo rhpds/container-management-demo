@@ -1,0 +1,75 @@
+= Security and Compliance
+
+== Demo flow
+
+=== Know
+Explain how built-in guardrails reduce risk exposure and support compliance expectations in regulated environments.
+
+=== Show
+Demonstrate security controls in the console and connect each control to concrete risk reduction outcomes.
+
+== Security Context Constraints (SCCs)
+
+Security Context Constraints (SCCs) are an OpenShift-specific security mechanism that governs what actions a pod can perform and what system privileges it has.  
+
+Think of RBAC as controlling who can manipulate API objects (e.g., "Can this user create a pod?"), while SCCs control what that pod is allowed to do to the underlying Linux host once it gets created (e.g., "Can this pod run as root or access the host's file system?").
+
+This built-in enforcement is exactly why OpenShift is considered "secure by default" compared to vanilla Kubernetes.
+
+*What SCCs Control*
+
+SCCs allow an administrator to define strict security boundaries for workloads. They control whether a pod or container can:
+
+* Run as a privileged container.
+* Request privilege escalation.
+* Request specific Linux capabilities (or drop them).
+* Use host directories as volumes.
+* Use a specific SELinux context or container user ID (UID).
+* Use host namespaces and networking.
+* Allocate an FSGroup that owns the pod volumes or configure allowable supplemental groups.
+* Require write access to its root file system.
+* Use specific volume types or seccomp profiles.
+
+*The Big Three Default SCCs*
+
+OpenShift ships with several out-of-the-box SCCs. The absolute most common ones you'll encounter are:  
+
+* `restricted-v2` (The Default): Applied to almost all user workloads automatically. It strictly strips away root privileges, blocks access to the host network/volumes, and forces the container to run as an allocated non-root user ID.  
+
+* `anyuid`: Allows a container to run as any User ID, including root (UID 0). It maintains other guardrails (like blocking host filesystem access) but is highly useful for third-party container images that assume they have root access.  
+
+* `privileged`: Total control. This grants a pod absolute power over the host system. It is reserved almost exclusively for critical cluster infrastructure, system operators, or CNI plugins.
+
+== Demonstration
+
+This work is based on https://github.com/ralvares/openshift-security-framework/blob/main/labs/basic/b1.adoc 
+
+OpenShift is famous for its strict *Security Context Constraints (SCCs)*.
+
+. Try to run a "naughty" container from the public internet that requires root access. Example: Apache web server
+
+. Create a new project to host the example, for instance `demo-security`
+
+. Go to `Workloads` -> `Deployments` and create a new Deployment
+
+. Configure the following image: `docker.io/httpd:latest`
+
+. Set the number of replicas to 1 for simplicity
+
+. Create the deployment and see that the container does not start:
++
+--
+[source,bash]
+----
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.130.0.237. Set the 'ServerName' directive globally to suppress this message
+(13)Permission denied: AH00072: make_sock: could not bind to address [::]:80
+(13)Permission denied: AH00072: make_sock: could not bind to address 0.0.0.0:80
+no listening sockets available, shutting down
+AH00015: Unable to open logs
+----
+--
+. The reason it does not work is because by default, OpenShift runs containers using an arbitrarily assigned high-number User ID (UID) (e.g., 1000750000). It does this for security—if a process escapes the container, it has no privileges on the host. The Apache image, however, is built to run as root (UID 0) so it can bind to port 80. When it hits OpenShift, it tries to write to the log files, realizes it isn't actually root, and crashes with Permission Denied.
+
+. Changing `privileged: true` (a common workaround) won’t work on OpenShift because, as the OpenShift API server will reject the request with an error message stating that the user does not have permission to use that specific SCC.
+
+. Now change the image to use a verified Red Hat UBI image ( `registry.access.redhat.com/ubi9/httpd-24` ) that follows security best practices: runs as non-root, uses a non-privileged port (`8080` instead of `80`), and is curated, patched, and supported. The pod should run with no issues after the change.

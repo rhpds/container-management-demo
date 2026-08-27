@@ -1,0 +1,33 @@
+* xref:index.adoc[How to Use This Demo Guide]
+* xref:01-overview.adoc[Demo Overview]
+* xref:02-details.adoc[Demo Details]
+
+.Chapter 1: Console Overview
+* xref:03-chapter01-01-The different perspectives in the OpenShift Console.adoc[]
+* xref:03-chapter01-02-The main dashboard.adoc[]
+* xref:03-chapter01-03-The events page.adoc[]
+* xref:03-chapter01-04-The software catalog.adoc[]
+* xref:03-chapter01-05-The topology view.adoc[]
+* xref:03-chapter01-06-The embedded web terminal.adoc[]
+* xref:03-chapter01-07-The user management.adoc[]
+* xref:03-chapter01-08-The quick starts.adoc[]
+
+.Chapter 2: Deploying COTS and existing applications
+* xref:04-chapter02-01-Using Operators - Crunchy PostgreSQL.adoc[]
+* xref:04-chapter02-02-Using Helm Charts - SQL Server.adoc[]
+* xref:04-chapter02-03-Deploying existing applications - Online Boutique.adoc[]
+
+.Chapter 3: Secure by default
+* xref:05-chapter03-01-Security and Compliance.adoc[]
+* xref:05-chapter03-02-RBAC.adoc[]
+* xref:05-chapter03-03-Introduction to network security.adoc[]
+
+.Chapter 4: Cluster Operations
+* xref:06-chapter04-01-Full-Stack Over-The-Air (OTA) Upgrades.adoc[]
+* xref:06-chapter04-02-Self-Healing by Design - Continuous Reconciliation.adoc[]
+* xref:06-chapter04-03-Intelligent Cluster Troubleshooting - OpenShift Lightspeed.adoc[]
+
+.Chapter 5: Observability - Logging and Monitoring
+* xref:07-chapter05-01-Monitoring your cluster and applications.adoc[]
+* xref:07-chapter05-02-Centralized logging with LokiStack.adoc[]
+* xref:07-chapter05-03-Correlating signals with the Troubleshooting Panel.adoc[]

@@ -1,0 +1,94 @@
+= Container Management Demo Details
+:navtitle: Demo Details
+
+== Proposed Timing
+
+**Opening (5 minutes):**
+
+* Discuss the container management use case (ISVs and existing containerized workloads)
+* Start with the customer outcome: a trusted, consistent platform to deploy and operate containers at scale
+
+**Technical Demo (30-60 minutes):**
+
+* Chapter 1: Console Overview
+* Chapter 2: Deploying COTS and existing applications
+* Chapter 3: Secure by default
+* Chapter 4: Cluster Operations
+* Chapter 5: Observability - Logging and Monitoring (optional, adds ~15-20 minutes; treat as time-permitting on a tight schedule)
+* Keep each module focused on Know (business context) and Show (live demonstration)
+
+**Closing (5-10 minutes):**
+
+* Reconnect capabilities to the customer problem
+* Capture follow-up actions and open questions
+
+== Products and Versions
+
+[cols="3,1"]
+|===
+|Product Name |Product Version
+
+|Red Hat OpenShift Container Platform |4.20
+|OpenShift Lightspeed |1.1.1
+|Loki Operator |6.x
+|Red Hat OpenShift Logging |6.x
+|Cluster Observability Operator |1.x (Technology Preview features may apply)
+|MinIO (demo object storage for LokiStack only) |latest
+|===
+
+== Credentials
+
+Use the environment values provided by Red Hat Demo Platform. Typical console access:
+
+[cols="2,1,1"]
+|===
+|System/URL |Username |Password
+
+|{openshift_console_url}[OpenShift Console^] |`{bastion_ssh_user_name}` |`{bastion_ssh_password}`
+|===
+
+== Pre-Demo Checklist
+
+Run through this list before any customer-facing presentation:
+
+* *OpenShift Lightspeed*: Confirm the LLM credentials secret is configured and the Lightspeed Operator reports `Available`. Ask your RHDP environment provider if unsure — this does not self-configure.
+* *Storage headroom*: If showing the Crunchy PostgreSQL demo, confirm at least 10 GiB of free storage is available (`Storage → PersistentVolumes`).
+* *User for RBAC demo*: Confirm a non-admin user exists in the cluster to use for the RBAC impersonation step. Create one via `Administration → User Management → Users` if needed.
+* *Online Boutique deployed*: The Topology view demo in Chapter 1 requires Online Boutique from Chapter 2 to already be running. Deploy it first if doing Chapter 1 standalone.
+
+== Troubleshooting Common Issues
+
+* Console perspective options look different than expected
+** Confirm the cluster version and whether OpenShift Virtualization or Advanced Cluster Management is installed
+* Operator, Helm, or application install fails
+** Verify project selection, catalog filters, and that the Operator or Helm repository is available
+* Network policy demonstration does not behave as expected
+** Confirm pods and services are in the intended project and labels match the policy selectors
+* OpenShift Lightspeed cannot answer questions
+** Confirm the Large Language Model (LLM) credentials secret and Lightspeed Operator configuration are complete
+* Console stays unavailable for more than ~60 seconds after deleting the `console` Deployment
+** Check `oc get clusteroperator console` for a `Progressing` or `Degraded` condition and give the Console Operator another minute; this is expected to be self-limiting
+* No custom metrics or alerts appear for your own namespace
+** Confirm User Workload Monitoring is enabled (`enableUserWorkload: true` in the `cluster-monitoring-config` ConfigMap)
+* `LokiStack` stays in a `Pending` or `Warning` state
+** Confirm the `logging-loki-s3` secret values match the MinIO service name, port, and credentials, and that the chosen `storageClassName` exists
+* No collector pods appear after applying `ClusterLogForwarder`
+** The CLF was likely applied before its prerequisites (service account, RBAC, CA bundle ConfigMap) existed. Delete it with `oc delete clusterlogforwarder instance -n openshift-logging` and reapply after all prerequisites are in place
+* Collector pods are `Running` but logs do not appear in `Observe -> Logs`
+** Check `oc logs -n openshift-logging -l app.kubernetes.io/name=collector --tail=20` for SSL certificate errors. If present, the `lokistack-gateway-ca-bundle` ConfigMap is missing or not referenced in the CLF `tls.ca` field — follow Step 4 in the logging chapter to create it
+* Given the resource footprint of Loki, MinIO, and the Cluster Observability Operator together on a single-node cluster, consider treating Chapter 5's logging and correlation modules as optional if the environment is heavily constrained
+
+== Follow-up Resources
+
+* xref:01-overview.adoc[Demo Overview]
+* https://docs.openshift.com/[OpenShift Documentation^]
+* https://github.com/ralvares/openshift-security-framework[OpenShift Security Framework examples^]
+* https://docs.openshift.com/container-platform/latest/observability/monitoring/monitoring-overview.html[OpenShift Monitoring documentation^]
+* https://docs.openshift.com/container-platform/latest/observability/logging/logging-release-notes.html[OpenShift Logging documentation^]
+* https://github.com/korrel8r/korrel8r[Korrel8r project (Troubleshooting Panel correlation engine)^]
+
+== Authors and Contact Information
+
+For questions or feedback about this demo content, contact the content authors through your Red Hat Demo Platform channels.
+
+For technical environment issues, reach out to the Red Hat Demo Platform team.

@@ -1,0 +1,98 @@
+= Self-Healing by Design: Continuous Reconciliation
+
+== Demo flow
+
+=== Know
+Position OpenShift's control loops as the reason clusters recover from mistakes and failures automatically, without a human re-running a script or SSHing into a box to fix drift.
+
+=== Show
+Break something on purpose, live, and watch OpenShift repair it in real time — on this single node, with nothing but the console and a terminal.
+
+== Introduction
+
+Every layer of OpenShift is not just installed once and left alone — it is *continuously managed* by a controller that constantly compares "what should exist" (declared in a Custom Resource) against "what actually exists," and reconciles any difference. This same pattern repeats at every layer of the stack:
+
+* *User workloads*: A `Deployment`'s `ReplicaSet` controller keeps the requested number of pods running. This is the well-known Kubernetes pattern, and you already saw it in xref:04-chapter02-01-Using Operators - Crunchy PostgreSQL.adoc[] when a deleted database pod was replaced automatically.
+* *Platform components*: Every entry under `Administration -> Cluster Settings -> ClusterOperators` — the console, the image registry, ingress, monitoring, and dozens more — is itself managed by an Operator that continuously enforces its own desired state. These are not install scripts that run once and walk away; they keep watching, forever.
+* *Host configuration*: The *Machine Config Operator (MCO)* extends the same reconciliation model down to the operating system itself. Kernel arguments, NTP configuration, SSH keys, and kubelet settings are described declaratively as versioned `MachineConfig` objects, rendered per node pool — not a one-time provisioning script or a manually maintained golden image.
+* *Compute infrastructure*: On multi-node, cloud-backed clusters, the same principle extends one level further via the *Machine API* (`Machine` and `MachineSet` resources) — if a VM instance disappears, a `MachineSet` notices and replaces it automatically. This specific layer is not observable on today's single-node environment, since there is only one node and no cloud provider integration here — but the underlying control-loop principle is identical to what you are about to see below, right now, on the control plane.
+
+This is the operational story worth making explicit to a technical audience: you do not need a separate toolchain, a scheduled cron job, or a runbook page titled "if X breaks, SSH in and fix it" for a wide class of problems. The platform is opinionated enough to detect and repair drift before a human ever gets paged.
+
+== Demonstration
+
+=== Example 1: Try to break the console on purpose
+
+This is the fastest, most visual way to make the point: delete something core, live, in front of the audience, and watch it come back without anyone touching a keyboard except to break it.
+
+. Open a terminal and look at the `Deployment` currently serving the console page you are looking at right now:
++
+[source,bash,role="execute"]
+----
+oc get deployment console -n openshift-console
+----
+. Delete it:
++
+[source,bash,role="execute"]
+----
+oc delete deployment console -n openshift-console
+----
+. You may briefly lose access to the web console if you refresh — that is expected.
+. Check the `ClusterOperator` responsible for this component:
++
+[source,bash,role="execute"]
+----
+oc get clusteroperator console
+----
+. Within roughly 30-60 seconds, watch the *Console Operator* notice the missing `Deployment`, recreate it from its stored desired state, and bring the `AVAILABLE` column back to `True` — with no manual `oc apply`, no alert escalation, no one on call.
+. Confirm it is back:
++
+[source,bash,role="execute"]
+----
+oc get deployment console -n openshift-console
+----
+
+NOTE: This is safe to repeat as many times as you like — the Console Operator restores it every time. It is a deliberately low-risk way to demonstrate a real self-healing control loop without touching anything that could put the single node itself at risk.
+
+=== Example 2: Host configuration as code, not a login session
+
+The same reconciliation model extends past Kubernetes objects, all the way down to the operating system. Every node — even the single node in this environment — belongs to a `MachineConfigPool`, and every OS-level setting is described declaratively as a `MachineConfig` object, versioned and rendered per pool, instead of living only inside someone's memory of what they once typed over SSH.
+
+. Check the pool status for this cluster. On a single-node cluster, this one node is a member of both the `master` and `worker` pools:
++
+[source,bash,role="execute"]
+----
+oc get machineconfigpool
+----
+. List the currently rendered configuration applied to the node:
++
+[source,bash,role="execute"]
+----
+oc get machineconfig | grep rendered
+----
+. Explain — rather than execute live, since it triggers a full node reboot — what it would look like to add an NTP server, a kernel argument, or a trusted CA to every node in this cluster:
++
+--
+[source,yaml]
+----
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  name: 99-demo-chrony
+  labels:
+    machineconfiguration.openshift.io/role: master
+spec:
+  config:
+    ignition:
+      version: 3.2.0
+    storage:
+      files:
+        - path: /etc/chrony.conf
+          mode: 0644
+          contents:
+            source: data:text/plain;base64,c2VydmVyIDAucm9vay1yZWQuYnJvd24ub3JnCg==
+----
+--
+. If you apply that (or any) `MachineConfig`, the MCO cordons, drains, applies the change, reboots, health-checks, and uncordons the node automatically — the exact same safe rollout mechanics used for the OTA upgrades in xref:06-chapter04-01-Full-Stack Over-The-Air (OTA) Upgrades.adoc[], just triggered by *your* change instead of a new OpenShift release.
+
+IMPORTANT: On a single-node cluster, that reboot takes the *entire* environment offline for a few minutes, since there is no second node to absorb workloads in the meantime. Treat this example as optional and time-permitting, or apply it before the audience joins and simply show the resulting `Completed` status afterward — do not trigger a live reboot mid-demo unless you are comfortable with the pause.

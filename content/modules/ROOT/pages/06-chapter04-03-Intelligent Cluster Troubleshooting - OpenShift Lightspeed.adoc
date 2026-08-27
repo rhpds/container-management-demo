@@ -1,0 +1,128 @@
+= Intelligent Cluster Troubleshooting (OpenShift Lightspeed)
+
+== Demo flow
+
+=== Know
+Explain how AI-assisted guidance helps teams diagnose incidents faster and reduce mean time to resolution.
+
+=== Show
+Demonstrate practical troubleshooting scenarios and map responses to real operational decision points.
+
+== Introduction
+
+*Red Hat OpenShift Lightspeed* is a generative AI-powered virtual assistant integrated directly into the OpenShift Container Platform web console through a natural-language interface.
+
+For operators and cluster administrators, *OpenShift Lightspeed* provides several key benefits that make managing the platform easier for beginners and more efficient for experienced professionals:
+
+* *Proactive Issue Identification and Resolution*: *OpenShift Lightspeed* continuously analyzes cluster data (gathered by the Insights Operator) to detect potential issues that could negatively impact cluster security, performance, availability, or fault tolerance. If issues are found, the Red Hat Lightspeed advisor service groups them by risk level and provides detailed explanations and tailored resolutions to solve the problem.
+* *Workload Configuration Insights*: By integrating with the Deployment Validation Operator (DVO), OpenShift Lightspeed can highlight specific application workloads whose configurations might lead to cluster health issues. Administrators can view runtime violations of deployment policies and get recommendations directly within the advisor service.
+* *Context-Aware Troubleshooting*: When managing multicluster environments, operators can use the Attach feature to automatically add relevant cluster resource details (such as YAML files from ``ManagedCluster`` and ``ManagedClusterInfo`` resources) as context to the AI agent's conversation. This allows the assistant to provide highly specific and relevant answers to complex questions.
+* *Centralized Visibility*: Operators do not need to leave the OpenShift web console to monitor cluster health. The Home Overview page features a Red Hat Lightspeed Status card that summarizes the number of potential issues grouped by risk, offering direct links to detailed reports in OpenShift Cluster Manager.
+
+NOTE: OpenShift Lightspeed does not provide the LLM for you, so you must configure the LLM before installing the OpenShift Lightspeed Operator. The OpenShift Lightspeed Service can rely on OpenAI, Microsoft Azure OpenAI and IBM watsonx as SaaS LLM providers. Check how to configure your LLM https://docs.redhat.com/en/documentation/red_hat_openshift_lightspeed/1.0/html/configure/ols-configuring-openshift-lightspeed#ols-creating-the-credentials-secret-using-web-console_ols-configuring-openshift-lightspeed[here]
+
+
+== Demonstration
+
+=== Example 1: CrashLoopBackOff — most visual, most common real-world issue
+
+. Create a new project, ``demo-lightspeed``
+. Create a new pod with this content (it is forcing the pod to exit):
++
+--
+[source,bash]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-app
+spec:
+  containers:
+  - name: app
+    image: busybox
+    command: ["sh", "-c", "echo starting && exit 1"]
+----
+--
+. See how the pod is in ``CrashLoopBackOff`` state
+. Open Openshift Lightspeed and ask: ``My pod bad-app is in CrashLoopBackOff, what's wrong?``
+. It will probably ask you for the logs
++
+image::example1.png[Example 1,1000,1000]
+
+. Provide the logs and see how it locates the issue and proposes a fix
++
+image::example1fix.png[Example 1 fix,1000,1000]
+
+. Modify the pod as instructed and try again.
+
+
+=== Example 2: ImagePullBackOff — fast to trigger, immediately visible
+
+. Create a new deployment with this content (image does not exist):
++
+--
+[source,bash]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: broken-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: broken
+  template:
+    metadata:
+      labels:
+        app: broken
+    spec:
+      containers:
+      - name: app
+        image: myregistry.internal/nonexistent:v99
+----
+--
+. Check the pod that it created in the ``Pods`` page and check that it is failing.
+. Ask OpenShift Lightspeed: ``Why can't my deployment broken-deploy start?``
+. See how Lightspeed finds the issue:
++
+image::example2.png[Example 2,1000,1000]
+
+=== Example 3: Broken liveness probe — showing Lightspeed’s depth
+
+. Create a new deployment with this content:
++
+--
+[source,bash]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: probe-fail
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: probe-fail
+  template:
+    metadata:
+      labels:
+        app: probe-fail
+    spec:
+      containers:
+      - name: app
+        image: registry.access.redhat.com/ubi9/nginx-120:9.8-1781010529
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080   # nginx listens on 80, not 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+----
+--
+. Check the pod that it created in the ``Pods`` page and check that it is failing.
+. Ask OpenShift Lightspeed: ``My nginx deployment keeps restarting but the image is fine, why?``
+. See how Lightspeed finds the issue:
++
+image::example3.png[Example 3,1000,1000]
+

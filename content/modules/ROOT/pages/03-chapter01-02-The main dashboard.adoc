@@ -1,0 +1,23 @@
+= The Main Dashboard
+
+== Demo flow
+
+=== Know
+Explain how dashboard telemetry helps teams detect risk early and make faster operational decisions.
+
+=== Show
+Walk through each card and connect the live signals to reliability, capacity, and upgrade readiness outcomes.
+
+The dashboard is organized into several Cards that aggregate live data from Prometheus and the Kubernetes API:
+
+* *Details Card*: Shows high-level metadata, including the Cluster ID, Provider (e.g., vSphere, AWS, Bare Metal), OpenShift Version, and the Update Status (indicating if an update is available or in progress).
+
+* *Status Card*: A color-coded health indicator. It displays a "Green Tick" for healthy clusters or alerts (Warning/Critical) if there are issues. You can click on specific sub-components like Control Plane or Storage to see exactly where a failure is occurring.
+
+* *Cluster Inventory Card*: Provides a total count of critical resources. It lists the number of Nodes, Pods, Storage Claims, and—if OpenShift Virtualization is active—the total number of Virtual Machines. Icons (like an exclamation point) appear next to any resource type currently in a failed state.
+
+* *Cluster Utilization Card*: Displays real-time graphs for CPU Usage, Memory Allocation, Storage Consumption, and Network Throughput. You can toggle the time range (e.g., 1 hour, 6 hours) directly on the card.
+
+* *Activity Card*: A live feed of cluster events. It highlights recent significant actions, such as pod crashes, successful node scale-ups, or VM migrations.
+
+image::dashboard.png[OpenShift Console Dashboard,1000,1000]

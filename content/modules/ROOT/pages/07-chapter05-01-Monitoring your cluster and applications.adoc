@@ -1,0 +1,105 @@
+= Monitoring your cluster and applications
+
+== Demo flow
+
+=== Know
+Explain that monitoring ships out of the box and lets both platform teams and application teams observe health without deploying extra infrastructure.
+
+=== Show
+Demonstrate the Observe perspective, a live PromQL query, and a custom alert firing end-to-end in under a minute.
+
+== Introduction
+
+OpenShift Container Platform includes a *fully integrated monitoring stack* based on Prometheus, Alertmanager, and Thanos Querier. Unlike vanilla Kubernetes, where you have to source, install, and wire together your own metrics pipeline, monitoring is a day-1 capability of every cluster — including compact, resource-constrained clusters like the *Single Node OpenShift (SNO)* environment used in this demo.
+
+The stack is split into two layers:
+
+* *Core platform monitoring*: Always on. Tracks the health of cluster components — nodes, the API server, etcd, Operators — and ships with pre-built dashboards and hundreds of alerting rules maintained by Red Hat.
+* *User Workload Monitoring (UWM)*: Optional (commonly pre-enabled in demo environments), lets application teams bring their own metrics, alerts, and dashboards for their own namespaces — without needing `cluster-admin` access. This self-service model is a major reason platform teams standardize on OpenShift monitoring instead of asking every team to run their own Prometheus.
+
+NOTE: On a Single Node OpenShift cluster, control plane, infrastructure, and workloads all share the same physical resources. This makes the built-in *Compute Resources* dashboards particularly useful — and it also means you may already see real resource-pressure alerts (for example `CPUThrottlingHigh`) firing in the environment. That is expected, and it is actually a great, authentic talking point about right-sizing workloads.
+
+== Checking User Workload Monitoring is enabled
+
+. Log in to the web console as `cluster-admin` 
+. Enable user workload monitoring by opening a terminal and running:
++
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+data:
+  config.yaml: |
+    enableUserWorkload: true
+EOF
+----
+
+== Demonstration
+
+=== Example 1: Exploring the built-in dashboards
+
+. Switch to the `Administrator` perspective and go to `Observe` -> `Dashboards`.
+. Select the `Kubernetes / Compute Resources / Cluster` dashboard. Make sure to select `All Projects` in the dropdown.
+. Since this is a single-node cluster, this one dashboard tells the whole story: total CPU, memory, and pod count for the entire environment.
+. Switch the dashboard drop-down to `Node` and select the single node to drill into per-node detail (network, disk I/O, filesystem).
+
+=== Example 2: Querying metrics with PromQL
+
+. Go to `Observe` -> `Metrics`.
+. Run a simple, audience-friendly query to count running pods per namespace:
++
+[source,promql]
+----
+count(kube_pod_status_phase{phase="Running"}) by (namespace)
+----
+. Try a second query showing CPU usage by namespace, to spot the noisiest workloads at a glance:
++
+[source,promql]
+----
+sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (namespace)
+----
+. Switch between the `Table` and `Graph` views to show trends over time.
+
+=== Example 3: Creating and silencing a custom alert
+
+Rather than depending on a specific workload to organically trigger an alert (which is not guaranteed to be reproducible across environments), we will create a lightweight, always-reliable demo `PrometheusRule`. This is a safe, standard technique for teaching the full alerting pipeline without generating real load on the cluster.
+
+. Create a new project, `demo-observability`.
+. Apply the following `PrometheusRule`:
++
+--
+[source,yaml]
+----
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: demo-always-firing
+  namespace: demo-observability
+  labels:
+    openshift.io/prometheus-rule-evaluation-scope: leaf-prometheus
+spec:
+  groups:
+    - name: demo.rules
+      rules:
+        - alert: DemoAlwaysFiring
+          expr: vector(1) > 0
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Demo alert used to showcase the alerting pipeline"
+            description: "This alert is synthetic and safe to silence or delete at any time."
+----
+--
+. Wait about a minute, then go to `Observe` -> `Alerting`. Clear all filters. The `DemoAlwaysFiring` alert appears with a `Firing` state.
+. Click on the alert, then click `Silence Alert` (on the right side under the graph) to demonstrate how operators acknowledge noise without deleting the underlying rule.
+. Clean up when done:
++
+[source,bash,role="execute"]
+----
+oc delete prometheusrule demo-always-firing -n demo-observability
+----

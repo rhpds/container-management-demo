@@ -1,0 +1,56 @@
+= Full-Stack Over-The-Air (OTA) Upgrades
+
+== Demo flow
+
+=== Know
+Position OTA upgrades as one supported, versioned operation covering the operating system and the platform together — not a checklist of independently-versioned components to keep in sync yourself.
+
+=== Show
+Walk through the update channel and cluster settings screens and explain exactly what happens on this single-node cluster when an update is triggered.
+
+== The Upgrading Process
+
+Over-the-air (OTA) updates in OpenShift Container Platform are automated updates delivered to the cluster, covering both OpenShift components and the underlying Red Hat Enterprise Linux CoreOS (RHCOS).
+
+The cluster update generally occurs in two main phases:
+
+. *Cluster Version Operator (CVO) target update payload deployment*: The update begins when the CVO queries the OpenShift Update Service (OSUS) for valid update paths based on an update graph. The CVO retrieves the target release image and applies its manifests in separate, logical stages called Runlevels. The CVO ensures that all cluster Operators in the active Runlevel reach a stable state (e.g., reporting Available=True and Degraded=False) before proceeding to the next Runlevel.
+
+. *Machine Config Operator (MCO) node updates*: Once the control plane is updated, the MCO applies the new configuration and operating system to every compute and control plane node. The MCO performs sequential actions on the nodes: it cordons and drains the nodes to safely evict pods, applies the operating system update, reboots the machine, and finally uncordons the node to schedule workloads again.
+
+This is the detail worth pausing on with a technical audience: *the operating system and the Kubernetes platform are versioned, tested, and rolled out together, as a single supported artifact.* You are not separately tracking a base OS patch level, a container runtime version, a CNI plugin release, and an orchestrator version, then hoping the combination has actually been tested together. One update graph, one supported path, one rollback story.
+
+NOTE: For disconnected environments, if your cluster is in a restricted network and cannot access the public internet, you can install a local instance of the OpenShift Update Service. This allows you to mirror the update graphs and release images locally, providing a similar OTA update experience without needing a direct connection to Red Hat's public APIs.
+
+=== A note for this single-node environment
+
+On a *multi-node* cluster, the MCO's cordon-drain-reboot-uncordon sequence happens one node at a time, so workloads are simply rescheduled onto the nodes that are not currently updating — true zero-downtime rolling updates.
+
+This demo runs on a *Single Node OpenShift (SNO)* cluster, where the control plane and the only worker are the same machine. There is nowhere else to move a pod to, so the reboot step does briefly interrupt workloads on this specific node. What does not change is everything upstream of that reboot: the update path is still validated against the graph, every `ClusterOperator` still has to report healthy before the node update proceeds, and the whole sequence is still one fully automated, auditable operation rather than a manually staged, multi-tool process. That is the point worth making to an audience evaluating operational effort, independent of topology: a bigger cluster gets you zero-downtime for free using this exact same mechanism, a smaller one still gets a safe, fully automated, single-command upgrade.
+
+=== Update Channels
+
+In OpenShift Container Platform, *update channels* allow you to declare the minor version you want to update to while choosing the timing and level of support for those updates. The *Cluster Version Operator (CVO)* uses your configured channel and an update graph to provide a list of recommended and conditional updates available to your cluster. You can check your upgrade path online https://access.redhat.com/labs/ocpupgradegraph/update_path[here].
+
+image::update-path.png[Update Path,1000,1000]
+
+Using version 4.21 as an example, the following update channels are available:
+
+* *Fast channel (fast-4.21)*: This channel is updated with new versions of OpenShift Container Platform as soon as Red Hat declares them generally available (GA). These releases are fully supported and intended for use in production environments.
+* *Stable channel (stable-4.21)*: Releases are added to the stable channel after a delay from when they were published in the fast channel. During this delay, data is collected from multiple sources and analyzed for product regressions. Once enough data is collected and stability is verified, the release is promoted to the stable channel. Newly installed clusters use the stable channel by default.
+* *EUS channel (eus-4.y)*: Offered for all even-numbered minor versions, this channel provides Extended Update Support (EUS). When releases are promoted to the stable channel, they are simultaneously promoted to the EUS channel. The primary purpose of this channel is to serve as a convenience for clusters performing a Control Plane Only update (jumping between even-numbered EUS versions).
+* *Candidate channel (candidate-4.21)*: This channel provides unsupported, early access to releases as soon as they are built. Candidate releases might lack the full feature set of eventual GA releases, have not gone through full Red Hat Quality Assurance, and might not offer update paths to later GA releases. This channel is strictly suitable for testing purposes where destroying and recreating a cluster is acceptable.
+
+== Demonstration
+
+These are the steps to upgrade this cluster:
+
+. Log in to the web console as a user with the `cluster-admin` role.
+. Navigate to the `Administration` section and select `Cluster Settings`.
+. Point out the `Update Status`, current version, and channel directly on this page — no separate inventory system needed to know what is installed.
+. Under `Update Channel`, select the update channel you want to use. Click `Save` to apply the change.
+. Explain rather than trigger an actual update live (a real update takes longer than a typical demo slot allows): once a target version is selected, the CVO fetches the release image, applies it Runlevel by Runlevel, and only then does the Machine Config Operator take over on the node itself — cordon, drain, apply the transactional OS image update, reboot, health-check, uncordon.
+. On this single-node cluster, that reboot step is the one moment the environment will be briefly unreachable. On a multi-node cluster, the exact same steps repeat node by node with zero workload downtime.
+. Once an update completes, the new version appears directly in the `Cluster Settings` page — one place to confirm the entire stack, OS included, is current.
+
+image::update-process.png[Update Process,1000,1000]

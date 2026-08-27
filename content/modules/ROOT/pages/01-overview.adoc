@@ -1,0 +1,89 @@
+= Container Management Demo
+:navtitle: Introduction
+
+== Demo flow
+
+=== Know
+Explain why each capability matters for platform operations, risk reduction, and faster service delivery before opening the UI.
+
+=== Show
+Use the chapter sections below to demonstrate each capability live and tie each action back to customer outcomes.
+
+== Introduction
+
+A *Container Management* Platform is a trusted and consistent solution to deploy and run containers, improving efficiency and scalability of containerized workloads at scale. By abstracting away the underlying infrastructure, containers make it faster and easier to deploy and run workloads. This also boosts consistency and portability, allowing software to run reliably across different environments, from data centers to edge locations. These containers include:
+
+* Independent Software Vendors (ISVs): Deliver containerized COTS workloads to their customers.
+* Containers built outside of OpenShift: Customers who built containers outside of the OpenShift application platform and need a container management platform to deploy on.
+
+IMPORTANT: This demo does not cover Application Platform use cases. This demo is not suitable for those interested in using an application platform to develop, build and deploy their own applications.
+
+This demo is designed to help you understand the key features and capabilities of a Container Management Platform. It is not intended to be a comprehensive guide, but rather a starting point for your own exploration and learning.
+
+image::console.png[OpenShift Console,1000,1000]
+
+== Chapter 1: Console Overview
+
+While the underlying API of OpenShift Container Platform is 100% Kubernetes, plain Kubernetes focuses primarily on container orchestration and requires you to manually add and integrate your own solutions for authentication, networking, security, monitoring, and log management.
+
+The *OpenShift Container Platform web console* bridges this gap by providing an out-of-the-box, highly integrated graphical user interface that manages both standard Kubernetes resources and advanced platform-level requirements.
+
+== Chapter 2: Deploying COTS and existing applications
+
+In OpenShift, deploying third-party software typically follows one of three paths depending on whether you need a simple installation or long-term automated management.
+
+While Operators and Helm Charts are the primary industry standards, OpenShift also supports native Templates. Here is how they differ and when to use each.
+
+=== Operators (The "Smart" Way)
+
+Operators are the gold standard for complex, stateful applications (like databases or monitoring tools). An Operator is essentially a "human operator in a box"—it’s a piece of software that knows how to install, manage, and even repair another application.
+
+* *How to deploy*: Access the OperatorHub in the OpenShift console. Search for the software (e.g., MongoDB, Grafana), click Install, and then create an "Instance" of that software.
+* *Key Advantage*: It handles Day-2 operations. If a database node fails, the Operator fixes it. If you need a backup, the Operator can trigger it. It also manages its own updates seamlessly.
+* *Best For*: Databases (PostgreSQL, Redis), Messaging (Kafka), and Infrastructure tools (Service Mesh, Logging).
+
+=== Helm Charts (The "Package Manager" Way)
+
+Helm is often called the "apt" or "yum" of Kubernetes. It packages all the necessary YAML files into a single versioned unit called a Chart.
+
+* *How to deploy*: 
+** *Console*: Go to the Developer Catalog, filter by Helm Charts, and select one to install via a form-based UI.
+** *CLI*: Use the command `helm install <name> <chart-repo>`.
+* *Key Advantage*: It is highly flexible and platform-agnostic. Almost every major software project provides a Helm chart. It’s excellent for templating different environments (e.g., using one chart to deploy to Dev, Test, and Prod with different values).
+* *Best For*: Stateless applications, web frontends, and community software that doesn't require complex lifecycle management.
+
+=== OpenShift Templates (The "Native" Way)
+
+Templates are an OpenShift-specific way to define a set of objects that can be parameterized.
+
+* *How to deploy*: Found in the Developer Catalog under "Templates."
+* *Key Advantage*: They are native to OpenShift and very lightweight. They are perfect for internal "Golden Path" templates created by your own DevOps team for internal developers to use.
+* *Best For*: Simple, internal company standards and legacy OpenShift 3.x workflows.
+
+== Chapter 3: Secure by default
+
+This module is based on the work by Rodrigo Alvares about security. It only includes a few examples, but we recommend examining all of them. All examples are here: https://github.com/ralvares/openshift-security-framework 
+
+In a cloud-native environment, security isn't a final checklist or an afterthought—it is a continuous, automated layer built directly into the fabric of the platform. OpenShift is "secure by default," but understanding how to configure, manage, and audit these guardrails is essential for any platform engineer or architect.
+
+In this chapter, we will break down enterprise-grade cluster security into three foundational pillars:
+
+* *Security and Compliance* - In this section, we will explore Security Context Constraints (SCC)
+* *Role Based Access Control (RBAC)* - In this section, we will explore how to control access to the different resources in the cluster.
+* *Introduction to network security* - In this section, we will explore the basic mechanisms to control cluster traffic.
+
+== Chapter 4: Cluster Operations
+
+This module focuses on maintaining cluster health and simplifying management through the following three key areas. Every example is designed to run on the single-node environment used for this demo, and each one makes the same underlying point from a different angle: OpenShift does not just get installed — it keeps managing itself, so operators spend less time on manual toil than they would maintaining the same capabilities themselves.
+
+* *Full-Stack Over-The-Air (OTA) Updates*: Automates updates for both cluster components and the operating system together, as one supported, versioned operation, rather than independently-tracked components you must keep in sync yourself.
+* *Self-Healing by Design (Continuous Reconciliation)*: Demonstrates the control loops that continuously enforce desired state at every layer — workloads, platform components, and host configuration — by breaking something on purpose and watching it repair itself automatically.
+* *Intelligent Cluster Troubleshooting (OpenShift Lightspeed)*: An AI-powered virtual assistant integrated directly into the web console that offers proactive issue identification and context-aware troubleshooting guidance to help administrators resolve complex problems.
+
+== Chapter 5: Observability - Logging and Monitoring
+
+Plain Kubernetes leaves you to assemble your own metrics, alerting, and log aggregation stack. OpenShift ships an integrated observability experience out of the box, and its newest capabilities go a step further by correlating signals for you. This chapter is intentionally sized for a *Single Node OpenShift* environment, reusing the demo-oriented sizing profiles and lightweight components built for exactly that scenario.
+
+* *Monitoring your cluster and applications*: Explore the built-in Prometheus-based monitoring stack, run live PromQL queries, and trigger a real alert through the full alerting pipeline in under a minute.
+* *Centralized logging with LokiStack*: Deploy a demo-sized LokiStack, backed by a lightweight in-cluster object store, and see how logs outlive the pods that produced them.
+* *Correlating signals with the Troubleshooting Panel*: Use the Cluster Observability Operator's newest Troubleshooting Panel to jump from a firing alert straight to its related logs and resources in a single click.
