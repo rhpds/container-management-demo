@@ -87,7 +87,7 @@ spec:
 development:
   automation:
     gitops:
-      status: not_started
+      status: in_progress
     ansible:
       status: not_started
   e2e:
