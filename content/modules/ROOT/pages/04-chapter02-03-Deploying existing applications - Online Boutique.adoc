@@ -36,4 +36,6 @@ image::online-boutique.png[Online Boutique Topology,1000,1000]
 
 NOTE: At the moment, the topology view in the dark mode has not enough contrast to display the connections between the components
 
+With the Online Boutique running, proceed to the next section to explore the *Topology view* in detail — the microservices graph of this application is the ideal canvas for showing what the Topology view can do.
+
 

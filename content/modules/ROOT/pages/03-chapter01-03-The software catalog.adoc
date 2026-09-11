@@ -1,0 +1,143 @@
+= The Software Catalog
+
+== Demo flow
+
+=== Know
+Frame the catalog as a governance mechanism that standardizes onboarding and reduces deployment variability.
+
+=== Show
+Demonstrate software discovery and installation paths that accelerate adoption while preserving platform guardrails.
+
+The *Software Catalog* is the OpenShift Container Platform web console interface that allows cluster administrators and authorized users to discover, select, and install software on their cluster. Go to *Ecosystem → Software Catalog* to access the software catalog.
+
+image::software-catalog.png[OpenShift Console Software Catalog,1000,1000]
+
+The software catalog is organized into several categories:
+
+* *Operators*: Operators are the building blocks of the software catalog. They are the components that are used to manage the software on the cluster.
+* *Certified Operators*: Certified operators are the operators that are certified by Red Hat to be used on the cluster.
+* *Community Operators*: Community operators are the operators that are not certified by Red Hat to be used on the cluster.
+* *Other*: Other are the operators that are not certified by Red Hat to be used on the cluster.
+
+Here is a breakdown of the core advantages it brings to your workflow:
+
+== Self-Service Empowerment
+The biggest win is autonomy. Developers can provision databases, languages, and services without opening a ticket for the infrastructure team.
+
+* *Speed*: Provisioning a PostgreSQL database or a Node.js runtime takes seconds.
+* *Guardrails*: While it feels like total freedom for the developer, the admins still control what appears in the catalog, ensuring everything stays within company policy.
+
+== Standardized Templates
+The catalog uses Templates and Helm Charts to ensure consistency across the organization.
+
+* *No "Snowflakes"*: Every developer deploying a specific service uses the same validated configuration.
+* *Reduced Errors*: Since the deployment logic is pre-baked into the template, the risk of manual configuration errors (like forgetting a persistent volume or an environment variable) is significantly lowered.
+
+== Broad Ecosystem Integration
+The catalog isn't just for Red Hat products; it aggregates resources from multiple sources:
+
+* *OperatorHub*: Access to sophisticated, managed services (like MongoDB or Redis) that handle their own updates and backups.
+* *Helm Charts*: Direct integration with the massive Kubernetes Helm ecosystem.
+* *Source-to-Image (S2I)*: Allows you to point the catalog at a Git repository; OpenShift then builds the container image and deploys it automatically.
+
+== Simplified Discovery
+In a large enterprise, finding the "right" version of a tool can be a nightmare. The catalog organizes resources into logical categories:
+
+* *Languages*: Java, Python, .NET, Go, etc.
+* *Databases*: MariaDB, MySQL, MongoDB.
+* *Middleware*: Kafka (AMQ Streams), JBoss, etc.
+
+== Ecosystem Example: Deploying Grafana from OperatorHub
+
+This walkthrough deploys *Grafana* — a widely-used open-source observability dashboard by Grafana Labs — directly from the catalog. It demonstrates that OpenShift manages third-party software using the same Operator model as Red Hat products.
+
+=== Step 1 — Create a project
+
+In the *Administrator* perspective, navigate to *Home → Projects* and create a new project (for example, `grafana-demo`).
+
+=== Step 2 — Find the Operator in the catalog
+
+. Navigate to *Ecosystem → Software Catalog → OperatorHub*.
+. In the search box, type `Grafana`.
+. Select *Grafana Operator*, published by *Grafana Labs* (listed under the *Community* badge).
+. Click *Install*.
+. On the install screen, change the *Installed Namespace* to your `grafana-demo` project, then click *Install* again.
+
+Wait for the Operator status to show *Succeeded* before proceeding.
+
+=== Step 3 — Create a Grafana instance
+
+Once the Operator is ready, click *Create Instance* from the Operator details page.
+
+[IMPORTANT]
+====
+The default form may show a field labelled *External URL* (`spec.external.url`) marked as required.
+*Do not fill this field* — it is for connecting to an already-running Grafana Cloud instance, which is not what you want here.
+
+Instead, click *YAML view* at the top of the form and replace the entire content with the minimal spec below.
+====
+
+[source,yaml]
+----
+apiVersion: grafana.integreatly.org/v1beta1
+kind: Grafana
+metadata:
+  name: grafana-demo
+  namespace: grafana-demo
+  labels:
+    dashboards: "grafana-demo"
+spec:
+  route:
+    spec: {}
+  deployment:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: grafana
+              resources:
+                limits:
+                  memory: 256Mi
+                  cpu: 500m
+----
+
+Click *Create*. The Operator will deploy a Grafana pod and automatically create an OpenShift *Route* for external access.
+
+=== Step 3.5 — Watch the pod start up
+
+Before accessing the UI, use this moment to show the audience what OpenShift is doing behind the scenes.
+
+. Navigate to *Workloads → Pods* in your `grafana-demo` project.
+. You will see a pod named `grafana-demo-deployment-*` appear. Its status will progress from *Pending* → *ContainerCreating* → *Running*.
+. Click the pod name, then select the *Logs* tab.
+. Observe the Grafana startup sequence in real time — database migrations, HTTP server initialization, and plugin loading all appear in the log stream.
+
+[TIP]
+====
+This is a natural talking point: *"I didn't write a startup script or configure logging — the Operator packaged all of this. OpenShift is pulling the image, scheduling the pod, and streaming logs through the same interface you use for every workload on the platform, whether it's a Red Hat component or a community project like Grafana."*
+====
+
+Wait until the pod status shows *Running* and the logs show a line similar to:
+
+ logger=http.server t=... msg="HTTP Server Listen" address=[::]:3000
+
+before proceeding to access the Route.
+
+=== Step 4 — Access the Grafana UI
+
+. Navigate to *Networking → Routes* in your `grafana-demo` project.
+. Click the URL next to the `grafana-demo` route.
+. The Grafana login page opens in your browser.
+
+The default admin credentials are stored in a Secret automatically created by the Operator:
+
+. Go to *Workloads → Secrets* and find the secret named `admin-credentials`.
+. Click *Reveal values* to see the username and password.
+. Log in to Grafana with those credentials.
+
+[NOTE]
+====
+The fact that you never wrote a Deployment, a Service, or a Route manually is the point.
+The Operator encoded all of that operational knowledge — and OpenShift applied it through
+the same catalog and API surface it uses for its own components.
+====

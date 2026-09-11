@@ -40,3 +40,65 @@ Understanding who has access to what in a large cluster with hundreds of namespa
 Managing users individually is a nightmare. OpenShift relies on Groups to scale permissions.
 
 *Advantage*: The console allows you to manually create local groups for quick projects or, more importantly, monitor the status of your LDAP Group Sync. If a sync fails, the console's event stream will highlight the specific error (e.g., "invalid credentials" or "search base not found"), allowing for much faster resolution than digging through logs in the openshift-authentication namespace.
+
+== Live Demo: From Zero Access to Scoped Access in 60 Seconds
+
+This walkthrough demonstrates the full RBAC lifecycle — create a user, group them, grant scoped access, and verify it from the user's perspective — entirely from the console. The only CLI command is a single line run in the web terminal from the previous section.
+
+=== Step 1 — Create a user (web terminal)
+
+Open the web terminal and run:
+
+[source,bash]
+----
+oc create user demouser
+----
+
+`demouser` now appears in *User Management → Users* immediately. No password is needed — for the impersonation demo, only the User object has to exist.
+
+=== Step 2 — Impersonate before granting access (the "before" state)
+
+. Navigate to *User Management → Users* and click on `demouser`.
+. Click *Impersonate User*.
+. The console switches to `demouser`'s view — the project list is empty and most menus are gone.
+
+[TIP]
+====
+*"This user exists on the cluster but has no permissions. This is the OpenShift default: zero access until explicitly granted. No implicit trust, no open namespaces."*
+====
+
+. Click *Stop Impersonation* to return to your admin session.
+
+=== Step 3 — Create a group and add the user
+
+. Navigate to *User Management → Groups* and click *Create Group*.
+. Name the group `demo-viewers` and click *Create*.
+. On the group detail page, click *Add Users* and add `demouser`.
+
+=== Step 4 — Grant the group scoped access to one project
+
+. Navigate to the `grafana-demo` project.
+. Go to *RoleBindings → Create RoleBinding* and fill in the form:
++
+[cols="1,2"]
+|===
+| Field | Value
+
+| Name | `demo-viewers-view`
+| Subject type | *Group*
+| Subject name | `demo-viewers`
+| Role | `view`
+|===
++
+. Click *Create*. No YAML was written.
+
+=== Step 5 — Impersonate again (the "after" state)
+
+. Return to *User Management → Users → demouser → Impersonate User*.
+. The `grafana-demo` project now appears. Open it — all resources are visible but all edit and delete actions are greyed out.
+. Click *Stop Impersonation*.
+
+[TIP]
+====
+*"From zero access to scoped read-only in under a minute, without writing a single YAML file or restarting anything. In a real environment this same pattern scales to hundreds of users through LDAP group sync — the console just surfaces the result."*
+====

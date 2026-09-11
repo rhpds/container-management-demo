@@ -113,9 +113,9 @@ approval_checklist:
     design_overview: "A presenter-led demo covering OpenShift Container Platform across five chapters: console navigation, application deployment via Operators and Helm, security controls (SCCs, RBAC, NetworkPolicy), cluster lifecycle operations including OTA upgrades and AI-assisted troubleshooting with Lightspeed, and observability using Prometheus, LokiStack, and the Troubleshooting Panel. Runs on a pre-provisioned SNO cluster; presenters select 2-3 chapters per session (~90-120 min) from a full ~235-min catalog."
     module_summaries:
       - title: "Console Overview"
-        overview: "Orients the audience to the OpenShift web console by walking through Developer and Administrator perspectives, the Main Dashboard, Events page, Software Catalog, Topology view, embedded web terminal, user management, and guided Quick Starts."
+        overview: "Orients the audience to the OpenShift web console by walking through Developer and Administrator perspectives, the Main Dashboard, the Software Catalog (including a live Grafana community Operator deploy), the Events page, embedded web terminal, user management, and guided Quick Starts."
       - title: "Deploying Applications"
-        overview: "Demonstrates three deployment patterns — Crunchy PostgreSQL via OperatorHub (operator-managed stateful service), SQL Server via a custom Helm chart, and the Online Boutique microservices demo to illustrate workload portability onto OpenShift."
+        overview: "Demonstrates three deployment patterns — Crunchy PostgreSQL via OperatorHub (operator-managed stateful service), SQL Server via a custom Helm chart, and the Online Boutique microservices demo to illustrate workload portability onto OpenShift. Closes with the Topology view, using Online Boutique's multi-service graph to show inter-service relationships and workload health at a glance."
       - title: "Secure by Default"
         overview: "Shows OpenShift's layered security model through Security Context Constraints (kernel-level pod restrictions), Role-Based Access Control (namespace-scoped permissions), and NetworkPolicy (east-west traffic isolation between application namespaces)."
       - title: "Cluster Operations"

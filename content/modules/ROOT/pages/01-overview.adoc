@@ -60,6 +60,8 @@ Templates are an OpenShift-specific way to define a set of objects that can be p
 * *Key Advantage*: They are native to OpenShift and very lightweight. They are perfect for internal "Golden Path" templates created by your own DevOps team for internal developers to use.
 * *Best For*: Simple, internal company standards and legacy OpenShift 3.x workflows.
 
+Once the three deployment patterns have been demonstrated, the chapter closes with the *Topology view* — a graphical representation of the Online Boutique's microservices and their connections that makes it easy to visualise how OpenShift manages a complex, multi-service application.
+
 == Chapter 3: Secure by default
 
 This module is based on the work by Rodrigo Alvares about security. It only includes a few examples, but we recommend examining all of them. All examples are here: https://github.com/ralvares/openshift-security-framework 

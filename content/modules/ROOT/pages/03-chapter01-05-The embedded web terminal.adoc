@@ -47,3 +47,67 @@ Every time a user opens a web terminal, OpenShift provisions a dedicated, privat
 * *Resource Control*: Admins can set quotas on these terminal pods to ensure that developers don't accidentally consume too many cluster resources while running CLI tasks.
 
 image::terminal.png[OpenShift Console Terminal,1000,1000]
+
+== Live Demo: Terminal in Action
+
+This walkthrough uses the Grafana instance deployed in the Software Catalog section as a live prop, and takes about two minutes end to end.
+
+=== Step 1 — Open the terminal in context
+
+. In the console, navigate to the `grafana-demo` project in the *Developer* or *Administrator* perspective.
+. Click the terminal icon (>_) in the top-right corner of the console.
+. Once the terminal opens, run:
++
+[source,bash]
+----
+oc project
+----
++
+The output confirms you are already scoped to `grafana-demo` — no login, no kubeconfig, no context switching required.
+
+[TIP]
+====
+This is the *Contextual Awareness* feature in action. The terminal inherited the namespace from wherever you were in the UI. Point it out to the audience before running the next commands.
+====
+
+=== Step 2 — Retrieve the Grafana admin password
+
+The Grafana Operator automatically created a Secret with the admin credentials. Retrieve and decode it with a single pipeline:
+
+[source,bash]
+----
+oc get secret admin-credentials \
+  -o jsonpath='{.data.GF_SECURITY_ADMIN_PASSWORD}' | base64 -d
+----
+
+The admin password is printed directly in the terminal.
+
+[TIP]
+====
+*"I just retrieved a Kubernetes Secret, decoded it, and printed the value — from a browser tab — without installing anything, without a kubeconfig file, and without leaving the console. This is the same command a platform engineer would run from their laptop, running here from inside the cluster."*
+====
+
+=== Step 3 — Exec into the running container
+
+Get an interactive shell inside the Grafana container:
+
+[source,bash]
+----
+oc exec -it $(oc get pod -l app=grafana -o name | head -1) -- /bin/sh
+----
+
+Once inside, inspect the runtime configuration injected by the Operator:
+
+[source,bash]
+----
+env | grep GF_
+----
+
+You will see all Grafana configuration values — database path, security settings, server port — injected as environment variables by the Operator at deploy time.
+
+Type `exit` to return to the web terminal.
+
+[TIP]
+====
+*"Every container running on this cluster is inspectable and debuggable from the same browser session the audience is watching. No VPN, no SSH key, no local tools. This is especially powerful in regulated environments where installing binaries on a laptop is blocked by IT policy."*
+====

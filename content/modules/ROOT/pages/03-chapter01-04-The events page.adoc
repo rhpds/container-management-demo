@@ -36,3 +36,36 @@ The events shown on the page cover a wide range of system activities. Common cat
 * *Health events*: Shows when a container is marked as _Unhealthy_.
 * *Configuration events*: Shows issues like _FailedValidation_ for pod configurations.
 * *Node events*: Displays infrastructure-related events, which are typically found in the `default` namespace.
+
+== Live Demo: Triggering and Reading Events
+
+=== Reading existing events (passive)
+
+If you have already deployed Grafana from the Software Catalog in the previous section, its deployment generated a full sequence of events you can read right now.
+
+. Navigate to *Home → Events*.
+. In the project drop-down, select `grafana-demo`.
+. You will see the event history from the deployment: image pull, container creation, and pod start — in chronological order.
+
+Use the *All Types* filter to switch between *Normal* and *Warning* to show the audience how severity filtering works.
+
+=== Triggering live events (active)
+
+To generate a fresh burst of events in real time, delete the running Grafana pod. OpenShift will immediately recreate it — this takes about 10 seconds and produces multiple new events you can watch appear live.
+
+. Navigate to *Workloads → Pods* in the `grafana-demo` project.
+. Click the three-dot menu next to the `grafana-demo-deployment-*` pod and select *Delete Pod*.
+. Confirm the deletion.
+. Switch immediately to *Home → Events* (still filtered to `grafana-demo`).
+. Watch the events stream in real time: `Killing`, then `Pulling` / `Pulled`, then `Created`, then `Started`.
+
+[TIP]
+====
+This is a good moment to say: *"Notice I didn't restart anything manually — the platform detected that the desired state was one running pod, and it reconciled back to that state on its own. Every step is visible here in the event stream. This same self-healing behaviour applies at cluster scale, which we will see in more detail in the Cluster Operations chapter."*
+====
+
+[NOTE]
+====
+The pod will return to *Running* within a few seconds. The UI at *Home → Events* auto-refreshes,
+so there is no need to reload the page.
+====
