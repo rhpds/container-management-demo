@@ -43,14 +43,33 @@ Using version 4.21 as an example, the following update channels are available:
 
 == Demonstration
 
-These are the steps to upgrade this cluster:
+[IMPORTANT]
+====
+Do *not* trigger the upgrade during the demo. On this single-node cluster, the MCO reboot step will take the entire environment offline for several minutes — including the web console, the terminal, and all demo workloads. Instead, walk through the upgrade UI to show the audience how simple the process is, and leave the actual trigger as the very last action of the full demo session once all chapters are complete.
+====
+
+=== Walk through the upgrade UI (show, don't trigger)
 
 . Log in to the web console as a user with the `cluster-admin` role.
-. Navigate to the `Administration` section and select `Cluster Settings`.
-. Point out the `Update Status`, current version, and channel directly on this page — no separate inventory system needed to know what is installed.
-. Under `Update Channel`, select the update channel you want to use. Click `Save` to apply the change.
-. Explain rather than trigger an actual update live (a real update takes longer than a typical demo slot allows): once a target version is selected, the CVO fetches the release image, applies it Runlevel by Runlevel, and only then does the Machine Config Operator take over on the node itself — cordon, drain, apply the transactional OS image update, reboot, health-check, uncordon.
-. On this single-node cluster, that reboot step is the one moment the environment will be briefly unreachable. On a multi-node cluster, the exact same steps repeat node by node with zero workload downtime.
-. Once an update completes, the new version appears directly in the `Cluster Settings` page — one place to confirm the entire stack, OS included, is current.
+. Navigate to *Administration → Cluster Settings*.
+. Point out what is visible directly on this page — no separate inventory system needed:
+** Current version
+** Update status
+** Configured update channel
+** Available updates list
+. Under *Update Channel*, show the available channels and explain the `fast`, `stable`, and `eus` options in the context of what your customer's change management process requires.
+. Click through to the available update — show the version, the release notes link, and the *Update* button — but do not click *Update* yet.
+. Explain what would happen if you did click it: the CVO fetches the release image, applies it Runlevel by Runlevel (each `ClusterOperator` must report healthy before the next Runlevel starts), and only then does the MCO take over — cordon, drain, apply the OS image, reboot, health-check, uncordon. One command, fully automated, OS included.
+
+[TIP]
+====
+*"On a multi-node cluster this reboot happens one node at a time, so workloads keep running on the other nodes — true zero-downtime rolling updates. On this single-node environment the reboot is the only interruption, but the automation and the safety checks are identical. You are not separately tracking a base OS patch level, a container runtime version, a CNI plugin release, and an orchestrator version, then hoping the combination has been tested together. One update graph, one supported path, one rollback story."*
+====
 
 image::update-process.png[Update Process,1000,1000]
+
+=== Trigger the upgrade (end of demo only)
+
+Once every other chapter has been demonstrated and the audience has seen everything they need to see, come back to *Administration → Cluster Settings* and click *Update*.
+
+The upgrade will run unattended. If the demo environment is left running overnight, it will have completed by the next session. The new version — OS and platform together — will be visible directly on the Cluster Settings page.

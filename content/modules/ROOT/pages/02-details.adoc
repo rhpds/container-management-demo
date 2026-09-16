@@ -8,18 +8,33 @@
 * Discuss the container management use case (ISVs and existing containerized workloads)
 * Start with the customer outcome: a trusted, consistent platform to deploy and operate containers at scale
 
-**Technical Demo (30-60 minutes):**
+**Technical Demo:**
 
-* Chapter 1: Console Overview
-* Chapter 2: Deploying COTS and existing applications
-* Chapter 3: Secure by default
-* Chapter 4: Cluster Operations
-* Chapter 5: Observability - Logging and Monitoring (optional, adds ~15-20 minutes; treat as time-permitting on a tight schedule)
-* Keep each module focused on Know (business context) and Show (live demonstration)
+The full guide contains approximately *3 hours* of material. In practice, you will curate a subset.
+Use the table below to plan your session:
 
-**Closing (5-10 minutes):**
+[cols="3,1,1"]
+|===
+|Chapter / Section |Full timing |Skip if tight
+
+|Chapter 1: Console Overview |~45 min |Quick Starts (saves ~10 min)
+|Chapter 2: Deploying Applications |~40 min |SQL Server or Online Boutique alone (saves ~15 min)
+|Chapter 3: Secure by default |~35 min |Network Security (saves ~15 min)
+|Chapter 4: Cluster Operations |~30 min |Lightspeed (saves ~10 min)
+|Chapter 5: Observability |~30 min |Entire chapter (treat as optional/time-permitting)
+|===
+
+**Recommended 90-minute curated run:**
+
+* Chapter 1 — skip Quick Starts → *35 min*
+* Chapter 2 — all four sections → *40 min*
+* Chapter 3 — SCCs + RBAC only → *20 min*
+* _No Chapter 4 or 5 unless time allows_
+
+**Closing (5–10 minutes):**
 
 * Reconnect capabilities to the customer problem
+* If the cluster upgrade has been shown in Chapter 4, this is the moment to trigger it
 * Capture follow-up actions and open questions
 
 == Products and Versions
@@ -29,7 +44,7 @@
 |Product Name |Product Version
 
 |Red Hat OpenShift Container Platform |4.20
-|OpenShift Lightspeed |1.1.1
+|OpenShift Lightspeed |pre-installed in environment
 |Loki Operator |6.x
 |Red Hat OpenShift Logging |6.x
 |Cluster Observability Operator |1.x (Technology Preview features may apply)
@@ -49,38 +64,58 @@ Use the environment values provided by Red Hat Demo Platform. Typical console ac
 
 == Pre-Demo Checklist
 
-Run through this list before any customer-facing presentation:
+Complete the xref:00-initial-setup.adoc[⚙ Initial Setup] guide *before* any customer-facing presentation. Then verify the following immediately before going live:
 
-* *OpenShift Lightspeed*: Confirm the LLM credentials secret is configured and the Lightspeed Operator reports `Available`. Ask your RHDP environment provider if unsure — this does not self-configure.
-* *Storage headroom*: If showing the Crunchy PostgreSQL demo, confirm at least 10 GiB of free storage is available (`Storage → PersistentVolumes`).
-* *User for RBAC demo*: Confirm a non-admin user exists in the cluster to use for the RBAC impersonation step. Create one via `Administration → User Management → Users` if needed.
-* *Online Boutique deployed*: The Topology view demo in Chapter 1 requires Online Boutique from Chapter 2 to already be running. Deploy it first if doing Chapter 1 standalone.
+=== Environment health
+
+* [ ] Console is reachable and the cluster is fully healthy (green status on the Main Dashboard)
+* [ ] Developer perspective is enabled — the perspective switcher shows *Developer* as an option (requires the `oc patch` in Initial Setup Step 4)
+* [ ] OpenShift Virtualization Operator reports `Succeeded` (required for Virtualization perspective)
+* [ ] Red Hat ACM Operator reports `Succeeded` (required for Fleet Management perspective)
+* [ ] Web Terminal Operator reports `Succeeded` and the terminal icon appears in the top-right toolbar
+
+=== Chapter-specific prerequisites
+
+* [ ] *Grafana Operator + instance deployed* in the `grafana-demo` namespace — required for the Software Catalog, Events, Web Terminal, and Lightspeed demos (Chapters 1 and 4)
+* [ ] *`demouser` exists* and has a `view` RoleBinding to the `grafana-demo` namespace — required for the User Management and RBAC demos (Chapters 1 and 3). Create via `Administration → User Management → Users` if missing.
+* [ ] *Online Boutique deployed* and all pods are `Running` — required for the Topology view (Chapter 2), Network Security demo (Chapter 3), and Self-Healing demo (Chapter 4)
+* [ ] *Storage headroom*: at least 10 GiB free (`Storage → PersistentVolumes`) — required for the Crunchy PostgreSQL demo (Chapter 2)
+* [ ] *OpenShift Lightspeed*: confirm the LLM credentials secret is configured and the Lightspeed Operator reports `Available`
+* [ ] *(Chapter 5 only)* LokiStack reports `Ready` and collector pods are `Running` in `openshift-logging`
+* [ ] *(Chapter 5 only)* Cluster Observability Operator is installed and the `UIPlugin` for the Troubleshooting Panel is enabled
 
 == Troubleshooting Common Issues
 
-* Console perspective options look different than expected
-** Confirm the cluster version and whether OpenShift Virtualization or Advanced Cluster Management is installed
-* Operator, Helm, or application install fails
-** Verify project selection, catalog filters, and that the Operator or Helm repository is available
-* Network policy demonstration does not behave as expected
-** Confirm pods and services are in the intended project and labels match the policy selectors
-* OpenShift Lightspeed cannot answer questions
-** Confirm the Large Language Model (LLM) credentials secret and Lightspeed Operator configuration are complete
-* Console stays unavailable for more than ~60 seconds after deleting the `console` Deployment
-** Check `oc get clusteroperator console` for a `Progressing` or `Degraded` condition and give the Console Operator another minute; this is expected to be self-limiting
-* No custom metrics or alerts appear for your own namespace
-** Confirm User Workload Monitoring is enabled (`enableUserWorkload: true` in the `cluster-monitoring-config` ConfigMap)
-* `LokiStack` stays in a `Pending` or `Warning` state
+* *Developer perspective or Helm Charts filter not visible in the catalog*
+** Run the Developer perspective patch from xref:00-initial-setup.adoc[Initial Setup Step 4], then hard-refresh the console (Ctrl+Shift+R)
+* *Grafana instance stuck in `Pending`*
+** Check that the `grafana-demo` namespace was selected at install time and that the Operator CSV shows `Succeeded`
+** When creating the instance, use YAML view and omit `spec.external` entirely — that field is for connecting to an existing Grafana Cloud instance
+* *`demouser` cannot see the `grafana-demo` project during impersonation*
+** The console impersonation feature does not resolve group memberships. Bind the `view` role directly to the *User* subject `demouser` (not to the group) for the impersonation demo
+* *Operator, Helm, or application install fails*
+** Verify project selection, catalog filters, and that the Operator or Helm repository is reachable
+* *Network policy demonstration does not behave as expected*
+** Confirm pods and services are in the intended project and that label selectors on the NetworkPolicy match the actual pod labels (`app=cartservice`, `app=frontend`)
+* *OpenShift Lightspeed cannot answer questions*
+** Confirm the LLM credentials secret and Lightspeed Operator configuration are complete (`Administration → Cluster Settings → Configuration → LightspeedException`)
+* *Console stays unavailable after deleting the `console` Deployment (Self-Healing demo)*
+** Check `oc get clusteroperator console` — a `Progressing` condition is expected; the Console Operator will recreate it within 60–90 seconds
+* *No custom metrics or alerts appear for your namespace*
+** Confirm User Workload Monitoring is enabled — see xref:00-initial-setup.adoc[Initial Setup Step 5]
+* *`LokiStack` stays in `Pending` or `Warning` state*
 ** Confirm the `logging-loki-s3` secret values match the MinIO service name, port, and credentials, and that the chosen `storageClassName` exists
-* No collector pods appear after applying `ClusterLogForwarder`
-** The CLF was likely applied before its prerequisites (service account, RBAC, CA bundle ConfigMap) existed. Delete it with `oc delete clusterlogforwarder instance -n openshift-logging` and reapply after all prerequisites are in place
-* Collector pods are `Running` but logs do not appear in `Observe -> Logs`
-** Check `oc logs -n openshift-logging -l app.kubernetes.io/name=collector --tail=20` for SSL certificate errors. If present, the `lokistack-gateway-ca-bundle` ConfigMap is missing or not referenced in the CLF `tls.ca` field — follow Step 4 in the logging chapter to create it
-* Given the resource footprint of Loki, MinIO, and the Cluster Observability Operator together on a single-node cluster, consider treating Chapter 5's logging and correlation modules as optional if the environment is heavily constrained
+* *No collector pods after applying `ClusterLogForwarder`*
+** The CLF was likely applied before its prerequisites existed. Delete it with `oc delete clusterlogforwarder instance -n openshift-logging` and reapply after all prerequisites are in place
+* *Collector pods are `Running` but logs do not appear in Observe → Logs*
+** Check `oc logs -n openshift-logging -l app.kubernetes.io/name=collector --tail=20` for SSL errors; if present, the `lokistack-gateway-ca-bundle` ConfigMap is missing — follow the logging chapter setup reference
+* *Chapter 5 components are under heavy resource pressure on SNO*
+** LokiStack, MinIO, and the COO together have a significant footprint on a single node. Treat Chapter 5's logging and correlation sections as optional if the environment is resource-constrained
 
 == Follow-up Resources
 
 * xref:01-overview.adoc[Demo Overview]
+* xref:00-initial-setup.adoc[⚙ Initial Setup Guide]
 * https://docs.openshift.com/[OpenShift Documentation^]
 * https://github.com/ralvares/openshift-security-framework[OpenShift Security Framework examples^]
 * https://docs.openshift.com/container-platform/latest/observability/monitoring/monitoring-overview.html[OpenShift Monitoring documentation^]

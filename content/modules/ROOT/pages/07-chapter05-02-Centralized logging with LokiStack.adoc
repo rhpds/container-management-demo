@@ -6,11 +6,11 @@
 Position centralized logging as the fix for the classic "the pod already restarted and the logs are gone" problem, and explain why the modern Loki-based stack fits small environments.
 
 === Show
-Deploy a minimal LokiStack backed by a lightweight object store, then find and correlate application logs that already exist from earlier in the demo.
+Find logs from a pod that no longer exists — proving that logs outlive the containers that produced them.
 
 == Introduction
 
-By default, container logs in OpenShift live only as long as the pod that produced them (``oc logs`` reads directly from the container runtime on the node). Once a pod is deleted, evicted, or replaced — which happens constantly in Kubernetes — its logs disappear unless something has captured them centrally.
+By default, container logs in OpenShift live only as long as the pod that produced them (`oc logs` reads directly from the container runtime on the node). Once a pod is deleted, evicted, or replaced — which happens constantly in Kubernetes — its logs disappear unless something has captured them centrally.
 
 *OpenShift Logging* solves this using three components working together:
 
@@ -20,19 +20,58 @@ By default, container logs in OpenShift live only as long as the pod that produc
 
 TIP: The Loki Operator ships a purpose-built sizing profile called *`1x.demo`*. Unlike the production-oriented `1x.extra-small` and larger profiles, `1x.demo` is explicitly designed for proof-of-concept and small or single-node clusters — it is the right choice for this demo, and for any environment where you want centralized logging without dedicating significant CPU and memory to it.
 
-== Storage prerequisite: a lightweight object store
+[NOTE]
+====
+*Pre-demo requirement:* The full LokiStack stack (MinIO, Loki Operator, OpenShift Logging Operator, LokiStack instance, ClusterLogForwarder) must be deployed before this section. Allow 10–15 minutes on a fresh cluster. See xref:00-initial-setup.adoc[Initial Setup] for step-by-step instructions.
+====
 
-LokiStack always stores its chunks and indexes in an S3-compatible object store. In production, this is typically Red Hat OpenShift Data Foundation (ODF), Amazon S3, or another cloud provider bucket. For a fast, self-contained demo that doesn't depend on external cloud credentials, we will run a small *MinIO* instance inside the cluster instead.
+== Demonstration
 
-. Create a project for the logging stack's storage backend (you can use the embedded terminal in the web console):
+=== Step 1: Open the Logs view
+
+. In the *Administrator* perspective, navigate to `Observe` -> `Logs`.
+. You are now looking at a centralized stream of logs from every pod on the cluster, organised into the three default streams: *application*, *infrastructure*, and *audit*.
+
+[TIP]
+====
+*"On vanilla Kubernetes, there is no built-in log aggregation. You assemble your own stack — Fluentd or Fluent Bit, Elasticsearch or Loki, Kibana or Grafana — and you maintain it. On OpenShift, this view was available the moment the logging stack was deployed. No custom dashboards, no index patterns, no log pipeline YAML to maintain by hand."*
+====
+
+=== Step 2: Find logs from a deleted pod
+
+This is the core story of centralized logging.
+
+. In the namespace filter, select the `demo-lightspeed` project (created during the Lightspeed section of Chapter 4).
+. Search for `bad-app` in the free-text search field.
+. The `echo starting && exit 1` log line from the crashed pod appears — even though that pod was deleted long ago.
+
+[TIP]
+====
+*"That pod no longer exists on this cluster. But its log is here. Centralized logging decouples the life of your evidence from the life of your container. In a production incident, this is the difference between having a forensic trail and having nothing."*
+====
+
+=== Step 3: Search across all namespaces
+
+. Clear the namespace filter.
+. Search for `CrashLoopBackOff` across all namespaces.
+. Any pods that have recently crash-looped across the entire cluster appear in a single view — no need to know which namespace to look in, no need to `oc logs` pod by pod.
+
+[TIP]
+====
+*"This is how a platform team does triage. One search, one screen, entire cluster. Compare this to logging into individual nodes or running `kubectl logs` across dozens of namespaces one at a time."*
+====
+
+== Pre-demo setup reference
+
+The following is provided for reference. Complete all steps in xref:00-initial-setup.adoc[Initial Setup] before the demo.
+
+=== Storage prerequisite: MinIO
+
+LokiStack always stores its chunks and indexes in an S3-compatible object store. For a fast, self-contained demo that doesn't depend on external cloud credentials, a small *MinIO* instance runs inside the cluster.
+
+. Create the `demo-logging-storage` project.
+. Deploy MinIO using the *+* (Import YAML) button:
 +
-[source,bash,role="execute"]
-----
-oc new-project demo-logging-storage
-----
-. Deploy MinIO (use the Quick Create button in the right top side of the web console):
-+
---
 [source,yaml]
 ----
 apiVersion: apps/v1
@@ -94,16 +133,19 @@ spec:
       port: 9000
       targetPort: 9000
 ----
---
-. Create the bucket LokiStack will write to, using the `mc` client bundled in the MinIO image:
+. Create the bucket:
 +
 [source,bash,role="execute"]
 ----
 oc rsh -n demo-logging-storage deployment/minio \
   sh -c "mc alias set local http://localhost:9000 minioadmin minioadmin && mc mb local/logging-loki"
 ----
-. Install the *Red Hat OpenShift Logging* Operator.
-. Create the secret LokiStack will use to reach this bucket:
+
+=== Operators and LokiStack
+
+. Install *Red Hat OpenShift Logging* Operator (cluster-wide) from OperatorHub.
+. Install *Loki Operator* (cluster-wide) from OperatorHub.
+. Create the S3 credentials secret:
 +
 [source,bash,role="execute"]
 ----
@@ -113,29 +155,8 @@ oc create secret generic logging-loki-s3 -n openshift-logging \
   --from-literal=access_key_id=minioadmin \
   --from-literal=access_key_secret=minioadmin
 ----
-
-NOTE: This MinIO setup is for demo purposes only — a single replica, no TLS, static credentials. It is intentionally minimal so it starts in well under a minute on constrained hardware. Do not reuse this pattern in production.
-
-== Demonstration
-
-=== Step 1: Install the operators
-
-. Go to `Ecosystem` -> `Software Catalog`.
-. Filter by `Operators` and install the *Loki Operator* (accept the defaults, cluster-wide install).
-. Repeat for the *Red Hat Cluster Observability* Operator. Create an instance for logging.
-
-=== Step 2: Deploy a demo-sized LokiStack
-
-. Create the `openshift-logging` project if it does not already exist.
-. Check your cluster's default `StorageClass` (probably `ocs-external-storagecluster-ceph-rbd`):
+. Deploy the `LokiStack` instance:
 +
-[source,bash,role="execute"]
-----
-oc get storageclass
-----
-. Create the `LokiStack` instance (replace `ocs-external-storagecluster-ceph-rbd` with the value from the previous step if it is not the default):
-+
---
 [source,yaml]
 ----
 apiVersion: loki.grafana.com/v1
@@ -156,19 +177,16 @@ spec:
   tenants:
     mode: openshift-logging
 ----
---
 
-=== Step 3: Create the collector service account
+=== Collector service account and ClusterLogForwarder
 
-The `observability.openshift.io/v1` `ClusterLogForwarder` API (OpenShift Logging 6.x, used from OCP 4.16 onwards) does *not* automatically create the collector service account — you must create it and bind its permissions before applying the forwarder.
-
-. Create the service account in the `openshift-logging` namespace:
+. Create the service account:
 +
 [source,bash,role="execute"]
 ----
 oc create serviceaccount logging-collector -n openshift-logging
 ----
-. Grant log-collection permissions. These `ClusterRole` objects are created by the *Red Hat OpenShift Logging* Operator when it installs:
+. Bind log-collection permissions:
 +
 [source,bash,role="execute"]
 ----
@@ -177,20 +195,11 @@ oc adm policy add-cluster-role-to-user collect-application-logs \
 
 oc adm policy add-cluster-role-to-user collect-infrastructure-logs \
   -z logging-collector -n openshift-logging
-----
-. Grant LokiStack write permission. This `ClusterRole` is created by the *Loki Operator* when the `LokiStack` resource is deployed (complete Step 2 first):
-+
-[source,bash,role="execute"]
-----
+
 oc adm policy add-cluster-role-to-user logging-collector-logs-writer \
   -z logging-collector -n openshift-logging
 ----
-
-=== Step 4: Trust the LokiStack TLS certificate
-
-The LokiStack gateway uses a TLS certificate signed by OpenShift's internal service CA. The Vector collector rejects this certificate by default, so you must inject the cluster's CA bundle and reference it in the forwarder.
-
-. Create a `ConfigMap` with the service CA injection annotation. OpenShift automatically populates it with the cluster CA within a few seconds:
+. Inject the cluster CA bundle:
 +
 [source,bash,role="execute"]
 ----
@@ -205,21 +214,17 @@ metadata:
 data: {}
 EOF
 ----
-. Verify the CA bundle was injected (you should see PEM certificate content, not `{}`):
+. Verify the CA bundle was injected before continuing:
 +
 [source,bash,role="execute"]
 ----
 oc get configmap lokistack-gateway-ca-bundle -n openshift-logging \
   -o jsonpath='{.data}' | head -c 100
 ----
-
-=== Step 5: Apply the ClusterLogForwarder
-
-IMPORTANT: Complete Steps 2, 3, and 4 fully before applying this resource. If the CLF is applied before the service account, the RBAC bindings, or the CA bundle ConfigMap exist, the controller rejects it silently and will not create the collector `DaemonSet`. If that happens, delete the CLF and reapply it after all prerequisites are in place.
-
-. Apply the following manifest:
+. Apply the ClusterLogForwarder:
 +
---
+IMPORTANT: Complete all steps above fully before applying this resource. If the CLF is applied before the service account, the RBAC bindings, or the CA bundle ConfigMap exist, the controller rejects it silently and will not create the collector `DaemonSet`.
++
 [source,yaml]
 ----
 apiVersion: observability.openshift.io/v1
@@ -249,8 +254,7 @@ spec:
       inputRefs: ["application", "infrastructure"]
       outputRefs: ["default-loki"]
 ----
---
-. Verify the collector pod is running and successfully pushing logs to Loki (no SSL errors):
+. Verify the collector is running:
 +
 [source,bash,role="execute"]
 ----
@@ -258,10 +262,4 @@ oc get pods -n openshift-logging
 oc logs -n openshift-logging -l app.kubernetes.io/name=collector --tail=10
 ----
 
-=== Step 6: Find logs that already exist — a callback to Chapter 4
-
-. Wait 1-2 minutes for the collector `DaemonSet` pods to roll out.
-. Go to `Observe` -> `Logs` in the console.
-. Filter by the `demo-lightspeed` namespace (created earlier in xref:06-chapter04-03-Intelligent Cluster Troubleshooting - OpenShift Lightspeed.adoc[]) and search for `bad-app`.
-. Even if that pod has long since been deleted, its `echo starting && exit 1` log line is still here. *This is the punchline*: centralized logging decouples the life of your evidence from the life of your pod.
-. Try a free-text search across every namespace, for example `CrashLoopBackOff`, to show how quickly a cluster-wide incident can be triaged from a single screen.
+NOTE: This MinIO setup is for demo purposes only — a single replica, no TLS, static credentials. It is intentionally minimal so it starts in well under a minute on constrained hardware. Do not reuse this pattern in production.

@@ -1,28 +1,64 @@
 = The topology view
 
-== Demo flow
+== Know
 
-=== Know
-Explain why topology visualization improves service understanding and speeds incident triage.
+The Topology view turns a cluster full of abstract resource objects into a live visual graph.
+Every workload, service, route, and the connections between them are rendered on a single canvas — and the graph updates in real time as the platform reconciles state.
 
-=== Show
-Demonstrate how relationships between workloads and services help teams identify impact and dependencies quickly.
+For most container orchestrators this kind of view either doesn't exist or requires a third-party add-on.
+In OpenShift it is built in, requires zero configuration, and works the moment you deploy an application.
 
-The *Topology* view is a powerful tool that allows you to visualize the relationships between the different components of your cluster. It is a great way to get a quick overview of the cluster and the resources that are deployed on it.
+== Show
 
-image::topology.png[OpenShift Console Topology,1000,1000]
+=== Demonstration: Scale and self-heal without leaving the graph
 
-The topology view is organized into several sections:
+This demo uses the *Online Boutique* application deployed in the previous section.
 
-* *Nodes*: The nodes are the physical or virtual machines that are running the cluster.
-* *Pods*: The pods are the containers that are running on the nodes.
-* *Services*: The services are the services that are running on the cluster.
-* *Routes*: The routes are the routes that are running on the cluster.
+==== Step 1 — Open the Topology view
 
-To see a real example of the topology view, go to *Home → Topology* after deploying the *online-boutique* application.
+. Navigate to *Workloads → Topology*.
+. Select the project where the Online Boutique was deployed from the project dropdown.
+. The full microservice graph appears: all 11 services are automatically grouped into a single *online-boutique* application card because they share the `app.kubernetes.io/part-of` label.
++
+NOTE: This grouping is an OpenShift concept — vanilla Kubernetes has no notion of an "Application". Workloads there are isolated objects with no visual or logical grouping out of the box.
 
-To view the application's topology, first switch to the project where the *online boutique* application was deployed. You can select any service to see the available options. For the `frontend` microservice, the platform will display the associated pods, services, and the active route. Click the route to open the running application.
+==== Step 2 — Scale a service live from the graph
 
-image::boutique.png[Online Boutique Application,1000,1000]
+. Click the *`recommendationservice`* node (or any non-critical service).
+. In the context panel that opens on the right, click the *Details* tab.
+. Click the pencil icon next to *Replicas* and change the value from `1` to `2`.
+. Click *Save*.
+. Watch the node's pod ring in the graph: a second segment appears within seconds as OpenShift schedules and starts the new pod.
 
-NOTE: At the moment, the topology view in the dark mode has not enough contrast to display the connections between the components
+**Talking point:** _"No YAML, no terminal, no `kubectl scale`. The same reconciliation engine that runs cluster infrastructure is now managing your application replicas — and you can see it happen live."_
+
+==== Step 3 — Delete a pod and watch the platform self-heal
+
+. With `recommendationservice` still selected, click the *Resources* tab in the context panel.
+. Under *Pods*, click on one of the running pods and click on  *Actions -> Delete Pod*.
+. Confirm the deletion and come back to the Topology view.
+. Watch the Topology graph: the deleted pod's segment briefly grays out, then a new pod segment appears as the ReplicaSet controller immediately replaces it.
+
+**Talking point:** _"This is continuous reconciliation in action. The platform's desired state says two replicas — the moment reality diverges, OpenShift corrects it automatically. No alert, no runbook, no human intervention required."_
+
+==== Step 4 — Open the running application from the graph
+
+. Click the *`frontend`* node.
+. In the context panel, click the *Resources* tab.
+. Under *Routes*, click the URL to open the Online Boutique storefront in a new tab.
++
+TIP: You can also click the small arrow icon (↗) that appears on the top-right corner of the `frontend` node directly in the graph to open the route in one click.
+
+**Talking point:** _"From the same view where you monitored the topology, you can jump directly into the running application — no copy-pasting URLs or hunting through resource lists."_
+
+==== Step 5 — Scale back down
+
+. Go back to the *`recommendationservice`* node, click *Details*, and scale replicas back to `1`.
+
+This keeps the environment clean for the rest of the demo.
+
+---
+
+image::topology.png[OpenShift Console Topology view showing the Online Boutique microservices graph,1000,1000]
+
+NOTE: The topology view in dark mode may show low-contrast connector lines between services. Switch to light mode if the connections are hard to read during a presentation.

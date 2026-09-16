@@ -40,6 +40,8 @@ Click on the SQL Server Helm Chart and click on `Create`.
 
 Expand the form and add the SA password for the new database. Then click on `Create`.
 
+NOTE: The password must be at least 8 characters long and contain characters from three of the following four sets: Uppercase letters, Lowercase letters, Base 10 digits, and Symbols.
+
 image::create-helm-release.png[Create SQL Server,1000,1000]
 
 If everything is ok, then you will be redirected to the Topology view with the SQL Server pod running.

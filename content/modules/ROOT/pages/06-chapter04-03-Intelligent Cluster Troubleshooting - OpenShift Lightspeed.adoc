@@ -56,37 +56,21 @@ image::example1fix.png[Example 1 fix,1000,1000]
 . Modify the pod as instructed and try again.
 
 
-=== Example 2: ImagePullBackOff — fast to trigger, immediately visible
+=== Example 2: ImagePullBackOff — fast to trigger, no YAML needed
 
-. Create a new deployment with this content (image does not exist):
-+
---
-[source,bash]
-----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: broken-deploy
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: broken
-  template:
-    metadata:
-      labels:
-        app: broken
-    spec:
-      containers:
-      - name: app
-        image: myregistry.internal/nonexistent:v99
-----
---
-. Check the pod that it created in the ``Pods`` page and check that it is failing.
-. Ask OpenShift Lightspeed: ``Why can't my deployment broken-deploy start?``
-. See how Lightspeed finds the issue:
+Instead of creating a new broken deployment, break the Grafana instance already running from Chapter 1 by editing its image tag directly from the console.
+
+. Navigate to *Workloads → Deployments* in the `grafana-demo` project.
+. Click the Grafana deployment, then *Actions → Edit Deployment*.
+. Find the `image:` field in the container spec and change the tag from `latest` to `doesnotexist`.
+. Click *Save*. OpenShift rolls out a new ReplicaSet immediately.
+. Go to *Workloads → Pods* — the new pod enters `ImagePullBackOff` within seconds.
+. Open OpenShift Lightspeed and ask: `My Grafana pod is in ImagePullBackOff, what's wrong?`
+. See how Lightspeed identifies the invalid image reference and suggests correcting the tag.
 +
 image::example2.png[Example 2,1000,1000]
+
+. Fix it: return to *Actions → Edit Deployment*, restore the original image tag, and save. The pod recovers automatically.
 
 === Example 3: Broken liveness probe — showing Lightspeed’s depth
 

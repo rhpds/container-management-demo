@@ -41,62 +41,88 @@ OpenShift includes a set of pre-configured default cluster roles that can be bou
     
 * `edit` and `view`: Default OpenShift roles that grant standard read/write or read-only access to project resources.
 
-== Demonstration
+== Demonstration: The Compromised Account
 
-*Demo Objectives:*
+The goal of this demo is not to show how access is granted — that was covered in the User Management section. Here the focus is on what happens *after* a credential is stolen. This framing lands with any audience that has a security team.
 
-. Create a new Project (Namespace) for a development team.
+[TIP]
+====
+*"A developer account has been compromised. The attacker has valid credentials and is logged in right now. Let's follow exactly what they can do on this cluster."*
+====
 
-. Assign a developer restricted access to that specific project.
+`demouser` from the User Management section is already configured with `view` access on the `grafana-demo` project. No additional setup is needed.
 
-. Verify the restrictions by logging in as the developer to show they cannot alter infrastructure outside their sandbox.
+=== Step 1 — Impersonate the compromised account
 
-Log into the OpenShift Web Console.
+. Navigate to *User Management → Users* and click on `demouser`.
+. Click *Impersonate User*.
 
-. Look at the top left corner of the screen and ensure the dropdown is set to the *Core Platform* perspective.
+The console switches to `demouser`'s session.
 
-. In the navigation menu, go to `Home` -> `Projects`.
+=== Step 2 — Attempt lateral movement
 
-. Click the blue `Create Project` button on the right side.
+Try to reach other teams' workloads and cluster infrastructure.
 
-. Name the project `finance-frontend` and click `Create`.
+. Open the project dropdown at the top of the console.
+. Only `grafana-demo` is visible. `kube-system`, `openshift-monitoring`, `openshift-config`, and every other team's namespace are invisible — they do not appear in the list at all.
 
-Instead of crafting a complex RoleBinding YAML file, we will use OpenShift's built-in User Management interface to bind a pre-existing edit role to our user.
+[TIP]
+====
+*"The attacker can't even see other projects exist. There is nothing to enumerate, nothing to pivot to. The blast radius is already contained before a single action is taken."*
+====
 
-. In the left navigation menu, expand the `User Management` section and click on `RoleBindings`.
+=== Step 3 — Attempt privilege escalation
 
-. At the top of the page, ensure your project filter dropdown is set to the project we just created: `finance-frontend`.
+Try to grant `demouser` cluster-admin rights.
 
-. Click the `Create Binding` button.
+. Click the *+* (Import YAML) button in the top-right corner.
+. Paste the following and click *Create*:
++
+[source,yaml]
+----
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: demouser-escalation-attempt
+subjects:
+  - kind: User
+    name: demouser
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+----
++
+. The API rejects the request immediately with a clear RBAC error: `clusterrolebindings.rbac.authorization.k8s.io is forbidden`.
 
-. Set the following fields in the wizard interface:
+[TIP]
+====
+*"Privilege escalation blocked. The platform does not trust a user to modify their own permissions — or anyone else's. A stolen credential cannot become a cluster-admin credential."*
+====
 
-    * *Binding Type*: Namespace-wide role binding (RoleBinding)
+=== Step 4 — Attempt destruction within their own scope
 
-    * *Name*: `finance-developer-edit-binding`
+The attacker falls back to damaging what they do have access to.
 
-    * *Namespace*: `finance-frontend` (automatically set)
+. Navigate to the `grafana-demo` project.
+. Go to *Workloads → Deployments* and click on the Grafana deployment.
+. Every destructive action — *Delete*, *Edit*, *Scale* — is greyed out or absent. The `view` role is strictly read-only.
 
-    * *Role Name*: Select `edit` from the dropdown list. (This built-in role allows users to deploy apps, pods, and routes but bars them from altering security settings or quotas).
+[TIP]
+====
+*"Valid credentials. Five minutes of effort. Zero damage done. This is what least-privilege enforcement looks like in practice — not as a policy document, but as a technical control that the platform enforces automatically."*
+====
 
-    * *Subject*: `User`
+=== Step 5 — Stop impersonation
 
-    * *Subject Name*: `dev-bob` (Type the username of the developer account your enterprise identity provider maps).
+Click *Stop Impersonation* to return to the admin session.
 
-. Click `Create`.
-
-You will now see your newly created binding in the list, visually confirming that dev-bob is tied to the edit role within this scope.
-
-Now, let's step into the shoes of the developer to witness the strict boundaries enforced by the RBAC framework by using the Impersonation feature.
-
-. In the top right corner of the screen, click on the user icon and select `Impersonate User`.
-
-. Select `dev-bob` from the dropdown list and click `Impersonate`.
-
-. You will now see the OpenShift console as if you were logged in as `dev-bob`.
-
-. Click on the Project dropdown at the top.
-
-. The Result: `dev-bob` can see `finance-frontend` perfectly, but all other business namespaces or core infrastructure projects are invisible to him.
+[NOTE]
+====
+The key message for this audience is not the technical RBAC mechanics — it is the outcome.
+OpenShift does not give you the *option* to configure RBAC. It enforces it from day one,
+for every workload, every user, and every namespace, without any additional tooling required.
+====
 
 

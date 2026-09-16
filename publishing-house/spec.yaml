@@ -22,7 +22,7 @@ project:
 spec:
   title: "Container Management Demo"
   learning_objectives:
-    - "Demonstrate OpenShift Console capabilities across multiple perspectives, including topology views, the embedded web terminal, the Software Catalog, quick starts, and user management"
+    - "Demonstrate OpenShift Console capabilities, including topology views, the embedded web terminal, the Software Catalog, quick starts, and user management"
     - "Deploy applications on OpenShift using Operators (Crunchy PostgreSQL), Helm Charts (SQL Server), and existing containerized workloads (Online Boutique)"
     - "Demonstrate OpenShift security controls by walking through Security Context Constraints, Role-Based Access Control, and network policy enforcement"
     - "Demonstrate cluster lifecycle operations including a full-stack OTA upgrade, self-healing through continuous reconciliation, and AI-assisted troubleshooting with OpenShift Lightspeed"
@@ -113,7 +113,7 @@ approval_checklist:
     design_overview: "A presenter-led demo covering OpenShift Container Platform across five chapters: console navigation, application deployment via Operators and Helm, security controls (SCCs, RBAC, NetworkPolicy), cluster lifecycle operations including OTA upgrades and AI-assisted troubleshooting with Lightspeed, and observability using Prometheus, LokiStack, and the Troubleshooting Panel. Runs on a pre-provisioned SNO cluster; presenters select 2-3 chapters per session (~90-120 min) from a full ~235-min catalog."
     module_summaries:
       - title: "Console Overview"
-        overview: "Orients the audience to the OpenShift web console by walking through Developer and Administrator perspectives, the Main Dashboard, the Software Catalog (including a live Grafana community Operator deploy), the Events page, embedded web terminal, user management, and guided Quick Starts."
+        overview: "Orients the audience to the OpenShift web console by walking through the Main Dashboard, the Software Catalog (including a live Grafana community Operator deploy), the Events page, embedded web terminal, user management, and guided Quick Starts."
       - title: "Deploying Applications"
         overview: "Demonstrates three deployment patterns — Crunchy PostgreSQL via OperatorHub (operator-managed stateful service), SQL Server via a custom Helm chart, and the Online Boutique microservices demo to illustrate workload portability onto OpenShift. Closes with the Topology view, using Online Boutique's multi-service graph to show inter-service relationships and workload health at a glance."
       - title: "Secure by Default"

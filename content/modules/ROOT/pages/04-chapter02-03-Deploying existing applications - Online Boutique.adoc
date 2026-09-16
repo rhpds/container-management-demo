@@ -14,7 +14,9 @@ We have a Helm chart to deploy this application. It is a complex, cloud native, 
 
 Create a new project to deploy this application.
 
-Go to `Helm` -> `Repositories` and click on `Create Helm Repository`.
+Go to `Home` -> `Projects` and click on `Create Project`. Name it `online-boutique`.
+
+Go to `Helm` -> `Repositories` and click on `Create Helm Repository`. Make sure to select the `online-boutique` project.
 
 Fill out the following data:
 

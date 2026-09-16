@@ -69,30 +69,35 @@ oc create user demouser
 
 . Click *Stop Impersonation* to return to your admin session.
 
-=== Step 3 — Create a group and add the user
+=== Step 3 — Grant scoped access to one project
 
-. Navigate to *User Management → Groups* and click *Create Group*.
-. Name the group `demo-viewers` and click *Create*.
-. On the group detail page, click *Add Users* and add `demouser`.
+The RoleBinding must be created inside the `grafana-demo` project and bound directly to the *user* (not the group) — the console's impersonation feature sends only `Impersonate-User` and does not resolve group memberships, so a group binding is invisible during impersonation.
 
-=== Step 4 — Grant the group scoped access to one project
-
-. Navigate to the `grafana-demo` project.
-. Go to *RoleBindings → Create RoleBinding* and fill in the form:
+. In the project dropdown at the top of the console, switch to the `grafana-demo` project.
+. Navigate to *User Management → demouser → RoleBindings* and click *Create binding*:
 +
 [cols="1,2"]
 |===
 | Field | Value
 
-| Name | `demo-viewers-view`
-| Subject type | *Group*
-| Subject name | `demo-viewers`
-| Role | `view`
+| Binding type | *Namespace role binding (RoleBinding)*
+| Name | `demo-view`
+| Namespace | `grafana-demo`
+| Role name | `view`
+| Subject | *User*
+| Subject name | `demouser`
 |===
 +
-. Click *Create*. No YAML was written.
+. Click *Create*.
 
-=== Step 5 — Impersonate again (the "after" state)
+[NOTE]
+====
+*Why User and not Group?* The console's impersonation feature sets `Impersonate-User: demouser` but does not automatically inject group memberships. A group-based RoleBinding only applies when the user authenticates normally through an identity provider (which injects the groups into their token). For the live impersonation demo to show the "after" state, the binding must target the user directly.
+
+In a real deployment you would bind the *group* so that all group members inherit access automatically. After finishing the demo, you can also create a second binding with Subject: *Group* / `demo-viewers` to illustrate that pattern — but the impersonation demo relies on the user binding above.
+====
+
+=== Step 4 — Impersonate again (the "after" state)
 
 . Return to *User Management → Users → demouser → Impersonate User*.
 . The `grafana-demo` project now appears. Open it — all resources are visible but all edit and delete actions are greyed out.

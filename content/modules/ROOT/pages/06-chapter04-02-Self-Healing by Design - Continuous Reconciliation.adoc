@@ -21,7 +21,16 @@ This is the operational story worth making explicit to a technical audience: you
 
 == Demonstration
 
-=== Example 1: Try to break the console on purpose
+=== The OpenShift difference vs. vanilla Kubernetes
+
+Before the demos, set the context once:
+
+[TIP]
+====
+*"On a vanilla Kubernetes cluster, if you delete a system component — the dashboard deployment, the ingress controller — it stays deleted. Nobody brings it back unless someone runs `kubectl apply` again. On OpenShift, every platform component is owned by an Operator that watches it continuously. The desired state is stored, and the platform repairs itself. This is why OpenShift is an opinionated platform and not just a packaged Kubernetes distribution."*
+====
+
+=== Example 1: Break a platform component — watch it come back
 
 This is the fastest, most visual way to make the point: delete something core, live, in front of the audience, and watch it come back without anyone touching a keyboard except to break it.
 
@@ -44,7 +53,7 @@ oc delete deployment console -n openshift-console
 ----
 oc get clusteroperator console
 ----
-. Within roughly 30-60 seconds, watch the *Console Operator* notice the missing `Deployment`, recreate it from its stored desired state, and bring the `AVAILABLE` column back to `True` — with no manual `oc apply`, no alert escalation, no one on call.
+. Within roughly 30–60 seconds, watch the *Console Operator* notice the missing `Deployment`, recreate it from its stored desired state, and bring the `AVAILABLE` column back to `True` — with no manual `oc apply`, no alert escalation, no one on call.
 . Confirm it is back:
 +
 [source,bash,role="execute"]
@@ -54,7 +63,33 @@ oc get deployment console -n openshift-console
 
 NOTE: This is safe to repeat as many times as you like — the Console Operator restores it every time. It is a deliberately low-risk way to demonstrate a real self-healing control loop without touching anything that could put the single node itself at risk.
 
-=== Example 2: Host configuration as code, not a login session
+=== Example 2: Destroy an entire application — watch it rebuild itself
+
+This demo uses the Online Boutique from Chapter 2. It deletes all ~10 microservices simultaneously and watches the ReplicaSet controllers bring the full application back in under a minute — automatically, in parallel, with no human intervention.
+
+. Open the Topology view for the Online Boutique project. All pods should be green and running.
+. Open the web terminal and run:
++
+[source,bash,role="execute"]
+----
+oc delete pods --all -n <online-boutique-namespace>
+----
++
+Replace `<online-boutique-namespace>` with the project name used when deploying Online Boutique in Chapter 2.
+. Switch immediately to the Topology view — every workload node turns grey simultaneously as the pods terminate.
+. Watch the console: within 30–60 seconds all pods cycle back to Running, one by one and in parallel, driven entirely by the ReplicaSet controllers enforcing desired state.
+
+[TIP]
+====
+*"I just deleted every service in a 10-microservice application. OpenShift rebuilt the entire thing in under a minute, automatically. No runbook. No alert. No one on call. The platform knows what should be running, and it reconciles back to that state continuously — at the workload layer, at the platform component layer, and at the OS layer."*
+====
+
+[NOTE]
+====
+This demo does not require multiple nodes. The pods restart on the same single node — what you are demonstrating is the *control loop*, not node scheduling. On a multi-node cluster the same reconciliation happens, and if a node itself disappears the Machine API replaces the VM automatically using the exact same pattern.
+====
+
+=== Example 3: Host configuration as code, not a login session
 
 The same reconciliation model extends past Kubernetes objects, all the way down to the operating system. Every node — even the single node in this environment — belongs to a `MachineConfigPool`, and every OS-level setting is described declaratively as a `MachineConfig` object, versioned and rendered per pool, instead of living only inside someone's memory of what they once typed over SSH.
 

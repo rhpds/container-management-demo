@@ -76,7 +76,7 @@ The Grafana Operator automatically created a Secret with the admin credentials. 
 
 [source,bash]
 ----
-oc get secret admin-credentials \
+oc get secret grafana-demo-admin-credentials \
   -o jsonpath='{.data.GF_SECURITY_ADMIN_PASSWORD}' | base64 -d
 ----
 

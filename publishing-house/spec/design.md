@@ -20,7 +20,7 @@ This presenter-led demo showcases Red Hat OpenShift Container Platform as a comp
 
 ## Learning Objectives
 
-1. Demonstrate OpenShift Console capabilities across multiple perspectives, including topology views, the embedded web terminal, the Software Catalog, quick starts, and user management
+1. Demonstrate OpenShift Console capabilities, including topology views, the embedded web terminal, the Software Catalog, quick starts, and user management
 2. Deploy applications on OpenShift using Operators (Crunchy PostgreSQL), Helm Charts (SQL Server), and existing containerized workloads (Online Boutique)
 3. Demonstrate OpenShift security controls by walking through Security Context Constraints, Role-Based Access Control, and network policy enforcement
 4. Demonstrate cluster lifecycle operations including a full-stack OTA upgrade, self-healing through continuous reconciliation, and AI-assisted troubleshooting with OpenShift Lightspeed

@@ -16,19 +16,70 @@ Instead of manually jumping between an alert, a pod name, and a hand-written Log
 
 NOTE: The Cluster Observability Operator ships some capabilities as Technology Preview, and the set of available UI plugins can change between releases. Verify what is available and enabled on your specific cluster version before presenting this section live.
 
+[NOTE]
+====
+*Pre-demo requirement:* The Cluster Observability Operator and all three UIPlugins (monitoring, logging, troubleshooting-panel) must be installed and in `Available` state before this section. See xref:00-initial-setup.adoc[Initial Setup] for step-by-step instructions. After applying the plugins, do a hard refresh of the console (Ctrl+Shift+R) to activate the Troubleshooting Panel UI.
+====
+
+== The value of correlation: before and after
+
+To make the impact of this feature clear, set the context with what incident triage looks like *without* the Troubleshooting Panel:
+
+[TIP]
+====
+*"Without this feature, correlating an alert to its logs takes multiple manual steps: you note the alert name and namespace → switch to `Observe → Logs` → write a LogQL query using the right label selectors → manually align the time range to when the alert fired → find the relevant log lines → go back to metrics to cross-reference. If you don't know the exact label names, add another round trip. This takes 5–10 minutes per incident, and it requires platform knowledge that not everyone on the team has.*
+
+*With the Troubleshooting Panel, it takes one click."*
+====
+
 == Demonstration
 
-=== Step 1: Install the Cluster Observability Operator
+=== Step 1: Navigate to a firing alert
 
-. Go to `Ecosystem` -> `Software Catalog`, filter by `Operators`, and install the *Cluster Observability Operator*.
-
-=== Step 2: Enable the UI plugins
-
-Apply each plugin separately so you can verify each one becomes `Available` before moving to the next.
-
-. Enable the *Monitoring* plugin (adds the Incidents view and enhanced alerting UI):
+. Go to `Observe` -> `Alerting` and open the `DemoAlwaysFiring` alert created in xref:07-chapter05-01-Monitoring your cluster and applications.adoc[].
 +
---
+If you would rather correlate a real, story-driven signal instead of a synthetic one, recreate the `bad-app` `CrashLoopBackOff` pod from xref:06-chapter04-03-Intelligent Cluster Troubleshooting - OpenShift Lightspeed.adoc[] — `KubePodCrashLooping` is a default platform alert and makes for a more relatable narrative.
+
+=== Step 2: Open the Troubleshooting Panel
+
+. Click on the firing alert.
+. Click on the alert description, then open the *Troubleshooting Panel* drawer.
+. The panel shows everything Korrel8r considers related: the owning `Pod` and `Deployment`, and — with LokiStack wired up — a direct link into `Observe -> Logs` pre-filtered to that exact pod and time range.
+
+=== Step 3: Follow the link to logs
+
+. Click the log link in the panel.
+. The Logs view opens with the correct namespace filter and time range already applied — no LogQL required.
+
+[TIP]
+====
+*"What used to take three tools, tribal knowledge of label names, and 5–10 minutes of manual correlation now takes one click. The platform follows the signal for you. In a production incident at 2am, that difference matters."*
+====
+
+== Wrap-up
+
+This section closes the observability arc of the demo. The three tools together tell a complete operational story:
+
+* *Monitoring* — metrics and alerting, built-in from day one, no extra infrastructure
+* *LokiStack* — logs that outlive the pods that produced them
+* *Troubleshooting Panel* — one click from any signal to everything related
+
+Tie this back to the value proposition from the opening of the demo: less time spent context-switching between tools during an incident means faster resolution, and a flatter learning curve for engineers who are new to the platform.
+
+== Pre-demo setup reference
+
+The following is provided for reference. Complete all steps in xref:00-initial-setup.adoc[Initial Setup] before the demo.
+
+=== Install the Cluster Observability Operator
+
+. Go to `Ecosystem` -> `Software Catalog`, filter by `Operators`, and install the *Cluster Observability Operator* (cluster-wide).
+
+=== Enable the UI plugins
+
+Apply each plugin using the *+* (Import YAML) button and verify each one becomes `Available` before moving to the next.
+
+. Enable the *Monitoring* plugin:
++
 [source,yaml]
 ----
 apiVersion: observability.openshift.io/v1alpha1
@@ -41,12 +92,10 @@ spec:
     clusterHealthAnalyzer:
       enabled: true
 ----
---
 +
-NOTE: `spec.monitoring` cannot be empty for this plugin type, and the exact fields available vary by Cluster Observability Operator version. Run `oc explain uiplugin.spec.monitoring` before presenting to confirm what your installed version supports — some releases expose a deprecated `incidents` field instead of `clusterHealthAnalyzer`, and older ones may expose neither.
-. Enable the *Logging* plugin (adds `Observe -> Logs` connected to your LokiStack):
+NOTE: Run `oc explain uiplugin.spec.monitoring` before presenting to confirm what your installed version supports — some releases expose a deprecated `incidents` field instead of `clusterHealthAnalyzer`.
+. Enable the *Logging* plugin:
 +
---
 [source,yaml]
 ----
 apiVersion: observability.openshift.io/v1alpha1
@@ -60,10 +109,8 @@ spec:
       name: logging-loki
       namespace: openshift-logging
 ----
---
-. Enable the *Troubleshooting Panel* plugin (the Korrel8r-powered correlation sidebar):
+. Enable the *Troubleshooting Panel* plugin:
 +
---
 [source,yaml]
 ----
 apiVersion: observability.openshift.io/v1alpha1
@@ -73,24 +120,10 @@ metadata:
 spec:
   type: TroubleshootingPanel
 ----
---
 . Verify all three plugins are `Available`:
 +
 [source,bash,role="execute"]
 ----
 oc get uiplugin -o custom-columns=NAME:.metadata.name,AVAILABLE:.status.conditions[?(@.type==\"Available\")].status
 ----
-. Do a hard refresh of the console (Ctrl+Shift+R). The `Troubleshooting Panel` icon and the enhanced `Observe` views become available within a minute.
-
-=== Step 3: Correlate an alert to its logs, in one click
-
-. Go to `Observe` -> `Alerting` and open the `DemoAlwaysFiring` alert created in xref:07-chapter05-01-Monitoring your cluster and applications.adoc[] (recreate it if you already cleaned it up).
-+
-If you would rather correlate a real, story-driven signal instead of a synthetic one, recreate the `bad-app` `CrashLoopBackOff` pod from xref:06-chapter04-03-Intelligent Cluster Troubleshooting - OpenShift Lightspeed.adoc[] — `KubePodCrashLooping` is a default platform alert and makes for a more relatable narrative.
-. Click on the firing alert, click on the description, and then open the `Troubleshooting Panel` drawer.
-. Show how the panel proposes related resources — the owning `Pod` and `Deployment` — and, once logging is wired up, a direct link into `Observe -> Logs` pre-filtered to that exact pod and time range.
-. Close the loop with the audience: *what used to take three tools and tribal knowledge of label names now takes one click.*
-
-== Wrap-up
-
-Tie this back to the value proposition from the opening of the demo: less time spent context-switching between tools during an incident means faster resolution, and a flatter learning curve for engineers who are new to the platform.
+. Do a hard refresh of the console (Ctrl+Shift+R) to activate the new UI elements.

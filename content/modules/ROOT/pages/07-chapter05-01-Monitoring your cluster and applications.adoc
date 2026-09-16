@@ -15,28 +15,14 @@ OpenShift Container Platform includes a *fully integrated monitoring stack* base
 The stack is split into two layers:
 
 * *Core platform monitoring*: Always on. Tracks the health of cluster components — nodes, the API server, etcd, Operators — and ships with pre-built dashboards and hundreds of alerting rules maintained by Red Hat.
-* *User Workload Monitoring (UWM)*: Optional (commonly pre-enabled in demo environments), lets application teams bring their own metrics, alerts, and dashboards for their own namespaces — without needing `cluster-admin` access. This self-service model is a major reason platform teams standardize on OpenShift monitoring instead of asking every team to run their own Prometheus.
+* *User Workload Monitoring (UWM)*: Optional (pre-enabled in this demo environment), lets application teams bring their own metrics, alerts, and dashboards for their own namespaces — without needing `cluster-admin` access. This self-service model is a major reason platform teams standardize on OpenShift monitoring instead of asking every team to run their own Prometheus.
 
 NOTE: On a Single Node OpenShift cluster, control plane, infrastructure, and workloads all share the same physical resources. This makes the built-in *Compute Resources* dashboards particularly useful — and it also means you may already see real resource-pressure alerts (for example `CPUThrottlingHigh`) firing in the environment. That is expected, and it is actually a great, authentic talking point about right-sizing workloads.
 
-== Checking User Workload Monitoring is enabled
-
-. Log in to the web console as `cluster-admin` 
-. Enable user workload monitoring by opening a terminal and running:
-+
-[source,bash,role="execute"]
-----
-cat <<EOF | oc apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cluster-monitoring-config
-  namespace: openshift-monitoring
-data:
-  config.yaml: |
-    enableUserWorkload: true
-EOF
-----
+[NOTE]
+====
+*Pre-demo requirement:* User Workload Monitoring must be enabled before this section. See xref:00-initial-setup.adoc[Initial Setup] for instructions. It is a one-line ConfigMap change and does not require a restart.
+====
 
 == Demonstration
 
@@ -47,6 +33,11 @@ EOF
 . Since this is a single-node cluster, this one dashboard tells the whole story: total CPU, memory, and pod count for the entire environment.
 . Switch the dashboard drop-down to `Node` and select the single node to drill into per-node detail (network, disk I/O, filesystem).
 
+[TIP]
+====
+*"On vanilla Kubernetes there is no built-in dashboard. You provision Prometheus separately, deploy Grafana on top of it, write your own dashboards, and maintain them as the platform evolves. On OpenShift, this is day-1 infrastructure — it is already running, already wired to the cluster, already producing actionable data. Your operations team has full visibility before they deploy their first workload."*
+====
+
 === Example 2: Querying metrics with PromQL
 
 . Go to `Observe` -> `Metrics`.
@@ -56,12 +47,16 @@ EOF
 ----
 count(kube_pod_status_phase{phase="Running"}) by (namespace)
 ----
++
+This returns a table showing how many pods are actively running in each namespace — a quick way to see which teams or workloads are active on the cluster right now.
 . Try a second query showing CPU usage by namespace, to spot the noisiest workloads at a glance:
 +
 [source,promql]
 ----
 sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (namespace)
 ----
++
+This shows average CPU consumption (in cores) per namespace over the last 5 minutes. Sort the table descending to immediately identify the heaviest consumer.
 . Switch between the `Table` and `Graph` views to show trends over time.
 
 === Example 3: Creating and silencing a custom alert
@@ -69,9 +64,8 @@ sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (namespace)
 Rather than depending on a specific workload to organically trigger an alert (which is not guaranteed to be reproducible across environments), we will create a lightweight, always-reliable demo `PrometheusRule`. This is a safe, standard technique for teaching the full alerting pipeline without generating real load on the cluster.
 
 . Create a new project, `demo-observability`.
-. Apply the following `PrometheusRule`:
+. Click the *+* (Import YAML) button in the top-right corner of the console and paste the following:
 +
---
 [source,yaml]
 ----
 apiVersion: monitoring.coreos.com/v1
@@ -94,10 +88,15 @@ spec:
             summary: "Demo alert used to showcase the alerting pipeline"
             description: "This alert is synthetic and safe to silence or delete at any time."
 ----
---
 . Wait about a minute, then go to `Observe` -> `Alerting`. Clear all filters. The `DemoAlwaysFiring` alert appears with a `Firing` state.
-. Click on the alert, then click `Silence Alert` (on the right side under the graph) to demonstrate how operators acknowledge noise without deleting the underlying rule.
-. Clean up when done:
+. Click on the alert, then click `Silence Alert` to demonstrate how operators acknowledge noise without deleting the underlying rule.
+
+[TIP]
+====
+*"Every real alerting rule in this cluster — disk pressure, pod crash loops, etcd latency — follows the same pipeline you just saw. The only difference is that real rules express meaningful conditions instead of `vector(1) > 0`. The infrastructure to receive, route, and silence those alerts was already here when the cluster was provisioned."*
+====
+
+. Clean up when done: navigate to *Networking → Routes* or run from the terminal:
 +
 [source,bash,role="execute"]
 ----

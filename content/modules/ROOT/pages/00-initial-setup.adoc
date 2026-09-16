@@ -1,0 +1,358 @@
+= Initial Setup
+
+This page covers everything that must be in place *before* the audience joins. Work through each section in order. Allow approximately *30–45 minutes* on a freshly provisioned cluster.
+
+[IMPORTANT]
+====
+Do not skip this setup or attempt to do it live during the demo. Several steps take minutes to reconcile, and the logging and observability stacks must be fully operational before Chapter 5 begins. Starting the demo without completing this page will cause sections to fail visibly in front of the audience.
+====
+
+== Cluster prerequisites
+
+Verify the following before starting any setup:
+
+* Cluster-admin access on a provisioned Single Node OpenShift 4.22 cluster
+* Default StorageClass present and healthy: `oc get storageclass`
+* External network access (to pull images from `quay.io` and `registry.access.redhat.com`)
+* OpenShift Update Service reachable (for Chapter 4 — OTA Upgrades)
+
+---
+
+== Step 1 — Install the Web Terminal Operator
+
+Required for: *Chapter 1 — The embedded web terminal*
+
+. Navigate to *Ecosystem → Software Catalog → OperatorHub*.
+. Search for *Web Terminal* and install it with default settings (cluster-wide).
+. Wait for the Operator status to show *Succeeded*.
+. Verify: the terminal icon (>_) appears in the top-right corner of the console.
+
+NOTE: The Web Terminal Operator provisions a pod-based terminal session on demand. No additional configuration is needed after installation — clicking the icon starts a session automatically scoped to the current user and namespace.
+
+---
+
+== Step 2 — Enable User Workload Monitoring
+
+Required for: *Chapter 5 — Monitoring* (custom alerts demo)
+
+. Click the *+* (Import YAML) button and apply:
++
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+data:
+  config.yaml: |
+    enableUserWorkload: true
+----
+. Verify the user workload monitoring pods are running:
++
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-user-workload-monitoring
+----
+
+---
+
+== Step 3 — Deploy MinIO (LokiStack storage backend)
+
+Required for: *Chapter 5 — Centralized logging with LokiStack*
+
+. Create the storage project:
++
+[source,bash,role="execute"]
+----
+oc new-project demo-logging-storage
+----
+. Click the *+* (Import YAML) button and apply the MinIO deployment:
++
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  namespace: demo-logging-storage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+        - name: minio
+          image: quay.io/minio/minio:latest
+          args: ["server", "/data", "--console-address", ":9090"]
+          env:
+            - name: MINIO_ROOT_USER
+              value: minioadmin
+            - name: MINIO_ROOT_PASSWORD
+              value: minioadmin
+          ports:
+            - containerPort: 9000
+            - containerPort: 9090
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: minio-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-data
+  namespace: demo-logging-storage
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: demo-logging-storage
+spec:
+  selector:
+    app: minio
+  ports:
+    - name: api
+      port: 9000
+      targetPort: 9000
+----
+. Wait for the MinIO pod to reach *Running*, then create the logging bucket:
++
+[source,bash,role="execute"]
+----
+oc rsh -n demo-logging-storage deployment/minio \
+  sh -c "mc alias set local http://localhost:9000 minioadmin minioadmin && mc mb local/logging-loki"
+----
+
+---
+
+== Step 4 — Install the Logging and Loki Operators
+
+Required for: *Chapter 5 — Centralized logging with LokiStack*
+
+. Navigate to *Ecosystem → Software Catalog → OperatorHub*.
+. Install *Red Hat OpenShift Logging* (cluster-wide). Wait for *Succeeded*.
+. Install *Loki Operator* (cluster-wide). Wait for *Succeeded*.
+
+---
+
+== Step 5 — Deploy LokiStack
+
+Required for: *Chapter 5 — Centralized logging with LokiStack*
+
+. Create the `openshift-logging` namespace if it does not exist:
++
+[source,bash,role="execute"]
+----
+oc new-project openshift-logging
+----
+. Create the S3 credentials secret:
++
+[source,bash,role="execute"]
+----
+oc create secret generic logging-loki-s3 -n openshift-logging \
+  --from-literal=bucketnames=logging-loki \
+  --from-literal=endpoint=http://minio.demo-logging-storage.svc:9000 \
+  --from-literal=access_key_id=minioadmin \
+  --from-literal=access_key_secret=minioadmin
+----
+. Get your default StorageClass name:
++
+[source,bash,role="execute"]
+----
+oc get storageclass
+----
+. Click *+* (Import YAML) and apply, substituting your StorageClass name:
++
+[source,yaml]
+----
+apiVersion: loki.grafana.com/v1
+kind: LokiStack
+metadata:
+  name: logging-loki
+  namespace: openshift-logging
+spec:
+  size: 1x.demo
+  storage:
+    schemas:
+      - version: v13
+        effectiveDate: "2024-01-01"
+    secret:
+      name: logging-loki-s3
+      type: s3
+  storageClassName: <your-storageclass-name>
+  tenants:
+    mode: openshift-logging
+----
+
+---
+
+== Step 6 — Create the log collector and ClusterLogForwarder
+
+Required for: *Chapter 5 — Centralized logging with LokiStack*
+
+. Create the service account and grant permissions:
++
+[source,bash,role="execute"]
+----
+oc create serviceaccount logging-collector -n openshift-logging
+
+oc adm policy add-cluster-role-to-user collect-application-logs \
+  -z logging-collector -n openshift-logging
+
+oc adm policy add-cluster-role-to-user collect-infrastructure-logs \
+  -z logging-collector -n openshift-logging
+
+oc adm policy add-cluster-role-to-user logging-collector-logs-writer \
+  -z logging-collector -n openshift-logging
+----
+. Inject the cluster CA bundle:
++
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lokistack-gateway-ca-bundle
+  namespace: openshift-logging
+  annotations:
+    service.beta.openshift.io/inject-cabundle: "true"
+data: {}
+EOF
+----
+. Verify the CA bundle was injected (output should contain PEM certificate data, not `{}`):
++
+[source,bash,role="execute"]
+----
+oc get configmap lokistack-gateway-ca-bundle -n openshift-logging \
+  -o jsonpath='{.data}' | head -c 100
+----
+. Apply the ClusterLogForwarder:
++
+IMPORTANT: Do not apply this until the service account, all three ClusterRole bindings, and the CA bundle ConfigMap are confirmed in place. If applied too early, the collector DaemonSet will not be created.
++
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: logging-collector
+  outputs:
+    - name: default-loki
+      type: lokiStack
+      lokiStack:
+        target:
+          name: logging-loki
+          namespace: openshift-logging
+        authentication:
+          token:
+            from: serviceAccount
+      tls:
+        ca:
+          configMapName: lokistack-gateway-ca-bundle
+          key: service-ca.crt
+  pipelines:
+    - name: send-app-and-infra-logs
+      inputRefs: ["application", "infrastructure"]
+      outputRefs: ["default-loki"]
+----
+. Verify the collector pods are running and shipping logs without TLS errors:
++
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-logging
+oc logs -n openshift-logging -l app.kubernetes.io/name=collector --tail=10
+----
+
+---
+
+== Step 7 — Install Cluster Observability Operator and UI plugins
+
+Required for: *Chapter 5 — Correlating signals with the Troubleshooting Panel*
+
+. Install the *Cluster Observability Operator* from OperatorHub (cluster-wide). Wait for *Succeeded*.
+. Apply the three UIPlugins using the *+* (Import YAML) button. Apply them one at a time and verify each reaches `Available` before applying the next:
++
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1alpha1
+kind: UIPlugin
+metadata:
+  name: monitoring
+spec:
+  type: Monitoring
+  monitoring:
+    clusterHealthAnalyzer:
+      enabled: true
+----
++
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1alpha1
+kind: UIPlugin
+metadata:
+  name: logging
+spec:
+  type: Logging
+  logging:
+    lokiStack:
+      name: logging-loki
+      namespace: openshift-logging
+----
++
+[source,yaml]
+----
+apiVersion: observability.openshift.io/v1alpha1
+kind: UIPlugin
+metadata:
+  name: troubleshooting-panel
+spec:
+  type: TroubleshootingPanel
+----
+. Verify all three are `Available`:
++
+[source,bash,role="execute"]
+----
+oc get uiplugin -o custom-columns=NAME:.metadata.name,AVAILABLE:.status.conditions[?(@.type==\"Available\")].status
+----
+. Do a hard refresh of the console (Ctrl+Shift+R).
+
+---
+
+== Final checklist
+
+Run through this checklist immediately before the audience joins:
+
+[cols="1,3,1"]
+|===
+| # | Check | Status
+
+| 1 | *Web Terminal* icon (>_) visible in the console top bar | ☐
+| 2 | `oc get pods -n openshift-user-workload-monitoring` — all pods Running | ☐
+| 3 | MinIO pod Running: `oc get pods -n demo-logging-storage` | ☐
+| 4 | LokiStack pods Running: `oc get pods -n openshift-logging` | ☐
+| 5 | Collector DaemonSet running: `oc get pods -n openshift-logging -l app.kubernetes.io/name=collector` | ☐
+| 6 | All three UIPlugins `Available`: `oc get uiplugin` | ☐
+| 7 | Console hard-refreshed after UIPlugin setup | ☐
+| 8 | `Observe → Logs` view appears in the console (confirms logging plugin active) | ☐
+| 9 | `Observe → Alerting` shows Troubleshooting Panel icon on any alert | ☐
+|===
