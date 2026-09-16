@@ -1,0 +1,21 @@
+# Generated from https://github.com/rhpds/rhdp-gitops-patterns
+apiVersion: loki.grafana.com/v1
+kind: LokiStack
+metadata:
+  name: logging-loki
+  namespace: {{ .Values.logging.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  size: {{ .Values.logging.lokiStackSize }}
+  storage:
+    schemas:
+      - version: v13
+        effectiveDate: "2024-01-01"
+    secret:
+      name: logging-loki-s3
+      type: s3
+  storageClassName: {{ .Values.logging.storageClassName }}
+  tenants:
+    mode: openshift-logging

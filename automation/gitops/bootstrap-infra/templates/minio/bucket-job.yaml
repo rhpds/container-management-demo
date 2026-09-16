@@ -1,0 +1,27 @@
+# Generated from https://github.com/rhpds/rhdp-gitops-patterns
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-loki-bucket
+  namespace: {{ .Values.minio.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mc
+          image: {{ .Values.minio.mcImage }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              until mc alias set local http://minio.{{ .Values.minio.namespace }}.svc:9000 {{ .Values.minio.rootUser }} {{ .Values.minio.rootPassword }}; do
+                echo "Waiting for MinIO..."
+                sleep 5
+              done
+              mc mb --ignore-existing local/{{ .Values.minio.bucketName }}

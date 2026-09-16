@@ -1,0 +1,11 @@
+# Generated from https://github.com/rhpds/rhdp-gitops-patterns
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+data:
+  config.yaml: |
+    enableUserWorkload: true

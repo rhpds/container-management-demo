@@ -1,0 +1,7 @@
+# Generated from https://github.com/rhpds/rhdp-gitops-patterns
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.minio.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"

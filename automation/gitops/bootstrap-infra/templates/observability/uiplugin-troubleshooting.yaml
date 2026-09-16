@@ -1,0 +1,10 @@
+# Generated from https://github.com/rhpds/rhdp-gitops-patterns
+apiVersion: observability.openshift.io/v1alpha1
+kind: UIPlugin
+metadata:
+  name: troubleshooting-panel
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  type: TroubleshootingPanel

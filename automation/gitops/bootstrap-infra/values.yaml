@@ -1,2 +1,37 @@
+# Auto-injected by the deployer. Do not pass these manually.
 deployer:
-  domain: apps.example.com
+  domain: apps.cluster.example.com
+  apiUrl: https://api.cluster.example.com:6443
+  guid: xxxxx
+
+# Pinned RHPDS snapshot of redhat-operators for OCP 4.22.
+catalog:
+  redhatOperatorsImage: quay.io/rhpds/olm_snapshot_redhat_catalog:v4.22_2026_09_14
+
+webTerminal:
+  channel: fast
+  source: rhpds-redhat-operators
+  sourceNamespace: openshift-marketplace
+
+minio:
+  namespace: demo-logging-storage
+  image: quay.io/minio/minio:latest
+  mcImage: quay.io/minio/mc:latest
+  rootUser: minioadmin
+  rootPassword: minioadmin
+  storageSize: 10Gi
+  bucketName: logging-loki
+
+logging:
+  namespace: openshift-logging
+  loggingChannel: stable-6.6
+  lokiChannel: stable-6.6
+  source: rhpds-redhat-operators
+  sourceNamespace: openshift-marketplace
+  lokiStackSize: 1x.demo
+  storageClassName: ocs-external-storagecluster-ceph-rbd
+
+observability:
+  channel: stable
+  source: rhpds-redhat-operators
+  sourceNamespace: openshift-marketplace

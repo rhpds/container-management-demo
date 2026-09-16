@@ -1,0 +1,10 @@
+# Generated from https://github.com/rhpds/rhdp-gitops-patterns
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lokistack-gateway-ca-bundle
+  namespace: {{ .Values.logging.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    service.beta.openshift.io/inject-cabundle: "true"
+data: {}
