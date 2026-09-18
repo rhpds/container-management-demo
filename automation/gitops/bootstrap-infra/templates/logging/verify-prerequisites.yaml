@@ -1,0 +1,49 @@
+# Generated from https://github.com/rhpds/rhdp-gitops-patterns
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: verify-logging-prerequisites
+  namespace: openshift-operators
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 30
+  template:
+    spec:
+      serviceAccountName: bootstrap-jobs
+      restartPolicy: OnFailure
+      containers:
+        - name: verify
+          image: registry.redhat.io/openshift4/ose-cli-rhel9:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              NS={{ .Values.logging.namespace | quote }}
+
+              echo "Checking ServiceAccount logging-collector..."
+              until oc get sa logging-collector -n "$NS" > /dev/null 2>&1; do
+                echo "  waiting..."
+                sleep 5
+              done
+              echo "  OK"
+
+              for crb in logging-collector-application-logs logging-collector-infrastructure-logs logging-collector-logs-writer; do
+                echo "Checking ClusterRoleBinding $crb..."
+                until oc get clusterrolebinding "$crb" > /dev/null 2>&1; do
+                  echo "  waiting..."
+                  sleep 5
+                done
+                echo "  OK"
+              done
+
+              echo "Checking CA bundle has certificate data..."
+              until oc get cm lokistack-gateway-ca-bundle -n "$NS" -o jsonpath='{.data.service-ca\.crt}' 2>/dev/null | grep -q "BEGIN CERTIFICATE"; do
+                echo "  waiting for service-ca operator to inject certificate..."
+                sleep 10
+              done
+              echo "  OK"
+
+              echo "All ClusterLogForwarder prerequisites are ready"

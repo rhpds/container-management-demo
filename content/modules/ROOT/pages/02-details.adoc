@@ -43,7 +43,7 @@ Use the table below to plan your session:
 |===
 |Product Name |Product Version
 
-|Red Hat OpenShift Container Platform |4.20
+|Red Hat OpenShift Container Platform |4.22
 |OpenShift Lightspeed |pre-installed in environment
 |Loki Operator |6.x
 |Red Hat OpenShift Logging |6.x
