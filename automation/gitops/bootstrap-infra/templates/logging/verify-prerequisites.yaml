@@ -23,6 +23,12 @@ spec:
             - |
               NS={{ .Values.logging.namespace | quote }}
 
+              echo "Waiting for ClusterLogForwarder CRD..."
+              until oc get crd clusterlogforwarders.observability.openshift.io > /dev/null 2>&1; do
+                sleep 10
+              done
+              echo "  OK"
+
               echo "Checking ServiceAccount logging-collector..."
               until oc get sa logging-collector -n "$NS" > /dev/null 2>&1; do
                 echo "  waiting..."

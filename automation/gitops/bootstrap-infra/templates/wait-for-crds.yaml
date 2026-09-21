@@ -1,35 +1,46 @@
-# Generated from https://github.com/rhpds/rhdp-gitops-patterns
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: bootstrap-jobs
   namespace: openshift-operators
   annotations:
-    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-wave: "-4"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: bootstrap-jobs-reader
   annotations:
-    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-wave: "-4"
 rules:
   - apiGroups: ["apiextensions.k8s.io"]
     resources: ["customresourcedefinitions"]
     verbs: ["get"]
   - apiGroups: [""]
-    resources: ["serviceaccounts", "configmaps"]
-    verbs: ["get"]
+    resources: ["serviceaccounts", "configmaps", "pods"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "daemonsets"]
+    verbs: ["get", "list"]
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["clusterrolebindings"]
     verbs: ["get"]
+  - apiGroups: ["operators.coreos.com"]
+    resources: ["catalogsources", "subscriptions", "clusterserviceversions"]
+    verbs: ["get", "list"]
+  - apiGroups: ["loki.grafana.com"]
+    resources: ["lokistacks"]
+    verbs: ["get"]
+  - apiGroups: ["observability.openshift.io"]
+    resources: ["uiplugins", "clusterlogforwarders"]
+    verbs: ["get", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: bootstrap-jobs-reader
   annotations:
-    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-wave: "-4"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -42,7 +53,7 @@ subjects:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: wait-for-crds
+  name: wait-for-loki-crd
   namespace: openshift-operators
   annotations:
     argocd.argoproj.io/sync-wave: "1"
@@ -61,12 +72,8 @@ spec:
             - /bin/bash
             - -c
             - |
-              CRDS="lokistacks.loki.grafana.com clusterlogforwarders.observability.openshift.io uiplugins.observability.openshift.io"
-              for crd in $CRDS; do
-                echo "Waiting for CRD: $crd"
-                until oc get crd "$crd" > /dev/null 2>&1; do
-                  sleep 10
-                done
-                echo "CRD available: $crd"
+              echo "Waiting for CRD: lokistacks.loki.grafana.com"
+              until oc get crd lokistacks.loki.grafana.com > /dev/null 2>&1; do
+                sleep 10
               done
-              echo "All operator CRDs are available"
+              echo "CRD available: lokistacks.loki.grafana.com"

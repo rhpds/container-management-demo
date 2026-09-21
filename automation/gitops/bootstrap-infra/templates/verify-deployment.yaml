@@ -1,0 +1,123 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: verify-deployment
+  namespace: openshift-operators
+  annotations:
+    argocd.argoproj.io/sync-wave: "7"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      serviceAccountName: bootstrap-jobs
+      restartPolicy: OnFailure
+      containers:
+        - name: verify
+          image: registry.redhat.io/openshift4/ose-cli-rhel9:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              PASS=0
+              FAIL=0
+              report() {
+                local label="$1" ok="$2"
+                if [ "$ok" = "true" ]; then
+                  echo "  ✓ $label"
+                  PASS=$((PASS+1))
+                else
+                  echo "  ✗ $label"
+                  FAIL=$((FAIL+1))
+                fi
+              }
+
+              NS_LOG={{ .Values.logging.namespace | quote }}
+              NS_MINIO={{ .Values.minio.namespace | quote }}
+
+              echo ""
+              echo "=============================="
+              echo " Bootstrap Deployment Checks"
+              echo "=============================="
+              echo ""
+
+              # -- Step 1: Web Terminal Operator --
+              echo "[Step 1] Web Terminal Operator"
+              CSV_WT=$(oc get csv -n openshift-operators -l operators.coreos.com/web-terminal.openshift-operators="" \
+                -o jsonpath='{.items[0].status.phase}' 2>/dev/null || true)
+              report "CSV phase = Succeeded" "$([ "$CSV_WT" = "Succeeded" ] && echo true || echo false)"
+
+              # -- Step 2: User Workload Monitoring --
+              echo "[Step 2] User Workload Monitoring"
+              UWM_PODS=$(oc get pods -n openshift-user-workload-monitoring \
+                --field-selector=status.phase=Running --no-headers 2>/dev/null | wc -l)
+              report "Running pods in openshift-user-workload-monitoring >= 1" \
+                "$([ "$UWM_PODS" -ge 1 ] && echo true || echo false)"
+
+              # -- Step 3: MinIO --
+              echo "[Step 3] MinIO"
+              MINIO_READY=$(oc get deployment minio -n "$NS_MINIO" \
+                -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo 0)
+              report "MinIO deployment readyReplicas >= 1" \
+                "$([ "${MINIO_READY:-0}" -ge 1 ] && echo true || echo false)"
+
+              # -- Step 4: Logging and Loki Operators --
+              echo "[Step 4] Logging and Loki Operators"
+              CSV_LOKI=$(oc get csv -n openshift-operators -l operators.coreos.com/loki-operator.openshift-operators="" \
+                -o jsonpath='{.items[0].status.phase}' 2>/dev/null || true)
+              report "Loki Operator CSV phase = Succeeded" \
+                "$([ "$CSV_LOKI" = "Succeeded" ] && echo true || echo false)"
+
+              CSV_LOG=$(oc get csv -n "$NS_LOG" -l operators.coreos.com/cluster-logging."$NS_LOG"="" \
+                -o jsonpath='{.items[0].status.phase}' 2>/dev/null || true)
+              report "Logging Operator CSV phase = Succeeded" \
+                "$([ "$CSV_LOG" = "Succeeded" ] && echo true || echo false)"
+
+              # -- Step 5: LokiStack --
+              echo "[Step 5] LokiStack"
+              LOKI_READY=$(oc get lokistack logging-loki -n "$NS_LOG" \
+                -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || true)
+              report "LokiStack logging-loki condition Ready=True" \
+                "$([ "$LOKI_READY" = "True" ] && echo true || echo false)"
+
+              # -- Step 6: Log Collector --
+              echo "[Step 6] Log Collector (ClusterLogForwarder)"
+              CLF_EXISTS=$(oc get clusterlogforwarder instance -n "$NS_LOG" \
+                -o jsonpath='{.metadata.name}' 2>/dev/null || true)
+              report "ClusterLogForwarder 'instance' exists" \
+                "$([ "$CLF_EXISTS" = "instance" ] && echo true || echo false)"
+
+              COLLECTOR_PODS=$(oc get pods -n "$NS_LOG" \
+                -l app.kubernetes.io/name=collector \
+                --field-selector=status.phase=Running --no-headers 2>/dev/null | wc -l)
+              report "Collector pods running >= 1" \
+                "$([ "$COLLECTOR_PODS" -ge 1 ] && echo true || echo false)"
+
+              # -- Step 7: Cluster Observability Operator + UIPlugins --
+              echo "[Step 7] Cluster Observability Operator & UIPlugins"
+              CSV_COO=$(oc get csv -n openshift-operators \
+                -l operators.coreos.com/cluster-observability-operator.openshift-operators="" \
+                -o jsonpath='{.items[0].status.phase}' 2>/dev/null || true)
+              report "COO CSV phase = Succeeded" \
+                "$([ "$CSV_COO" = "Succeeded" ] && echo true || echo false)"
+
+              for plugin in monitoring logging troubleshooting-panel; do
+                STATUS=$(oc get uiplugin "$plugin" \
+                  -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null || true)
+                report "UIPlugin '$plugin' Available=True" \
+                  "$([ "$STATUS" = "True" ] && echo true || echo false)"
+              done
+
+              # -- Summary --
+              echo ""
+              echo "=============================="
+              echo " Results: $PASS passed, $FAIL failed"
+              echo "=============================="
+
+              if [ "$FAIL" -gt 0 ]; then
+                echo "Some checks failed — review the output above."
+                exit 1
+              fi
+              echo "All bootstrap checks passed."

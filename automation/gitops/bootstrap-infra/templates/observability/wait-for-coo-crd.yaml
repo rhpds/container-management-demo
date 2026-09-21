@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wait-for-coo-crd
+  namespace: openshift-operators
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 30
+  template:
+    spec:
+      serviceAccountName: bootstrap-jobs
+      restartPolicy: OnFailure
+      containers:
+        - name: wait
+          image: registry.redhat.io/openshift4/ose-cli-rhel9:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              echo "Waiting for CRD: uiplugins.observability.openshift.io"
+              until oc get crd uiplugins.observability.openshift.io > /dev/null 2>&1; do
+                sleep 10
+              done
+              echo "CRD available: uiplugins.observability.openshift.io"

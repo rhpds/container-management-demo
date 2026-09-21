@@ -5,7 +5,7 @@ metadata:
   name: rhpds-redhat-operators
   namespace: openshift-marketplace
   annotations:
-    argocd.argoproj.io/sync-wave: "-2"
+    argocd.argoproj.io/sync-wave: "-5"
 spec:
   sourceType: grpc
   image: {{ .Values.catalog.redhatOperatorsImage }}
