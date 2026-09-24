@@ -1,0 +1,58 @@
+# ArgoCD Application for bootstrap-infra
+#
+# The deployer applies ONLY this resource. ArgoCD then manages the entire
+# bootstrap-infra chart, respecting sync-wave ordering and hook Jobs.
+#
+# The deployer must substitute these placeholders before applying:
+#   __REPO_URL__         — git repo URL (e.g. https://github.com/rhpds/container-management-demo.git)
+#   __REPO_REVISION__    — branch/tag/commit (e.g. main)
+#   __DEPLOYER_DOMAIN__  — apps.cluster.example.com
+#   __DEPLOYER_API_URL__ — https://api.cluster.example.com:6443
+#   __DEPLOYER_GUID__    — RHDP environment GUID
+#   __CATALOG_IMAGE__    — pinned catalog image
+#   __STORAGE_CLASS__    — cluster StorageClass name
+#
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bootstrap-infra
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: default
+  source:
+    repoURL: __REPO_URL__
+    targetRevision: __REPO_REVISION__
+    path: automation/gitops/bootstrap-infra
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: deployer.domain
+          value: "__DEPLOYER_DOMAIN__"
+        - name: deployer.apiUrl
+          value: "__DEPLOYER_API_URL__"
+        - name: deployer.guid
+          value: "__DEPLOYER_GUID__"
+        - name: catalog.redhatOperatorsImage
+          value: "__CATALOG_IMAGE__"
+        - name: logging.storageClassName
+          value: "__STORAGE_CLASS__"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true

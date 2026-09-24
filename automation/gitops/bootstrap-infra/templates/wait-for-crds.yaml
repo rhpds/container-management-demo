@@ -23,7 +23,7 @@ rules:
     resources: ["deployments", "daemonsets"]
     verbs: ["get", "list"]
   - apiGroups: ["rbac.authorization.k8s.io"]
-    resources: ["clusterrolebindings"]
+    resources: ["clusterroles", "clusterrolebindings"]
     verbs: ["get"]
   - apiGroups: ["operators.coreos.com"]
     resources: ["catalogsources", "subscriptions", "clusterserviceversions"]
@@ -58,7 +58,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
     argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
   backoffLimit: 30
   template:

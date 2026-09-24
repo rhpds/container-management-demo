@@ -6,9 +6,9 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "7"
     argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
-  backoffLimit: 10
+  backoffLimit: 30
   template:
     spec:
       serviceAccountName: bootstrap-jobs
@@ -65,7 +65,7 @@ spec:
 
               # -- Step 4: Logging and Loki Operators --
               echo "[Step 4] Logging and Loki Operators"
-              CSV_LOKI=$(oc get csv -n openshift-operators -l operators.coreos.com/loki-operator.openshift-operators="" \
+              CSV_LOKI=$(oc get csv -n openshift-operators-redhat -l operators.coreos.com/loki-operator.openshift-operators-redhat="" \
                 -o jsonpath='{.items[0].status.phase}' 2>/dev/null || true)
               report "Loki Operator CSV phase = Succeeded" \
                 "$([ "$CSV_LOKI" = "Succeeded" ] && echo true || echo false)"

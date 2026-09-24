@@ -6,7 +6,7 @@ deployer:
 
 # Pinned RHPDS snapshot of redhat-operators for OCP 4.22.
 catalog:
-  redhatOperatorsImage: quay.io/rhpds/olm_snapshot_redhat_catalog:v4.22_2026_09_14
+  redhatOperatorsImage: quay.io/rhpds/olm_snapshot_redhat_catalog:v4.22_2026_09_21
 
 webTerminal:
   channel: fast
