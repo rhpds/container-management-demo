@@ -6,7 +6,7 @@
 Position OpenShift's control loops as the reason clusters recover from mistakes and failures automatically, without a human re-running a script or SSHing into a box to fix drift.
 
 === Show
-Break something on purpose, live, and watch OpenShift repair it in real time — on this single node, with nothing but the console and a terminal.
+Break something on purpose — a workload, a platform component, and an entire node — live, and watch OpenShift repair it in real time across the three-node cluster.
 
 == Introduction
 
@@ -15,7 +15,7 @@ Every layer of OpenShift is not just installed once and left alone — it is *co
 * *User workloads*: A `Deployment`'s `ReplicaSet` controller keeps the requested number of pods running. This is the well-known Kubernetes pattern, and you already saw it in xref:04-chapter02-01-Using Operators - Crunchy PostgreSQL.adoc[] when a deleted database pod was replaced automatically.
 * *Platform components*: Every entry under `Administration -> Cluster Settings -> ClusterOperators` — the console, the image registry, ingress, monitoring, and dozens more — is itself managed by an Operator that continuously enforces its own desired state. These are not install scripts that run once and walk away; they keep watching, forever.
 * *Host configuration*: The *Machine Config Operator (MCO)* extends the same reconciliation model down to the operating system itself. Kernel arguments, NTP configuration, SSH keys, and kubelet settings are described declaratively as versioned `MachineConfig` objects, rendered per node pool — not a one-time provisioning script or a manually maintained golden image.
-* *Compute infrastructure*: On multi-node, cloud-backed clusters, the same principle extends one level further via the *Machine API* (`Machine` and `MachineSet` resources) — if a VM instance disappears, a `MachineSet` notices and replaces it automatically. This specific layer is not observable on today's single-node environment, since there is only one node and no cloud provider integration here — but the underlying control-loop principle is identical to what you are about to see below, right now, on the control plane.
+* *Compute infrastructure*: On cloud-backed clusters, the *Machine API* (`Machine` and `MachineSet` resources) takes this one level further — if a VM instance disappears, a `MachineSet` notices and replaces it automatically.
 
 This is the operational story worth making explicit to a technical audience: you do not need a separate toolchain, a scheduled cron job, or a runbook page titled "if X breaks, SSH in and fix it" for a wide class of problems. The platform is opinionated enough to detect and repair drift before a human ever gets paged.
 
@@ -40,7 +40,13 @@ This is the fastest, most visual way to make the point: delete something core, l
 ----
 oc get deployment console -n openshift-console
 ----
-. Delete it:
+. Note which node is currently running the console pod:
++
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-console -o wide
+----
+. Delete the deployment:
 +
 [source,bash,role="execute"]
 ----
@@ -53,61 +59,124 @@ oc delete deployment console -n openshift-console
 ----
 oc get clusteroperator console
 ----
-. Within roughly 30–60 seconds, watch the *Console Operator* notice the missing `Deployment`, recreate it from its stored desired state, and bring the `AVAILABLE` column back to `True` — with no manual `oc apply`, no alert escalation, no one on call.
-. Confirm it is back:
+. Within roughly 30–60 seconds, watch the *Console Operator* notice the missing `Deployment`, recreate it from its stored desired state, and bring the `AVAILABLE` column back to `True`.
+. Check again which node is running the new console pod:
 +
 [source,bash,role="execute"]
 ----
-oc get deployment console -n openshift-console
-----
-
-NOTE: This is safe to repeat as many times as you like — the Console Operator restores it every time. It is a deliberately low-risk way to demonstrate a real self-healing control loop without touching anything that could put the single node itself at risk.
-
-=== Example 2: Destroy an entire application — watch it rebuild itself
-
-This demo uses the Online Boutique from Chapter 2. It deletes all ~10 microservices simultaneously and watches the ReplicaSet controllers bring the full application back in under a minute — automatically, in parallel, with no human intervention.
-
-. Open the Topology view for the Online Boutique project. All pods should be green and running.
-. Open the web terminal and run:
-+
-[source,bash,role="execute"]
-----
-oc delete pods --all -n <online-boutique-namespace>
+oc get pods -n openshift-console -o wide
 ----
 +
-Replace `<online-boutique-namespace>` with the project name used when deploying Online Boutique in Chapter 2.
-. Switch immediately to the Topology view — every workload node turns grey simultaneously as the pods terminate.
-. Watch the console: within 30–60 seconds all pods cycle back to Running, one by one and in parallel, driven entirely by the ReplicaSet controllers enforcing desired state.
+The Kubernetes scheduler may have placed it on a *different node* than before — the platform does not just repair the resource, it reschedules it for optimal placement.
+
+NOTE: This is safe to repeat as many times as you like — the Console Operator restores it every time.
+
+---
+
+=== Example 2: Simulate a node failure — watch workloads migrate live
+
+This is the highest-impact demo on a multi-node cluster. You take an entire node out of service, and the audience watches every pod migrate to the surviving nodes in real time — while the application stays up.
 
 [TIP]
 ====
-*"I just deleted every service in a 10-microservice application. OpenShift rebuilt the entire thing in under a minute, automatically. No runbook. No alert. No one on call. The platform knows what should be running, and it reconciles back to that state continuously — at the workload layer, at the platform component layer, and at the OS layer."*
+*"Imagine this node just suffered a hardware failure — a bad disk, a power supply, a network partition. On a traditional platform, that's an outage. On OpenShift, the platform moves your workloads automatically. Let me show you."*
 ====
 
-[NOTE]
-====
-This demo does not require multiple nodes. The pods restart on the same single node — what you are demonstrating is the *control loop*, not node scheduling. On a multi-node cluster the same reconciliation happens, and if a node itself disappears the Machine API replaces the VM automatically using the exact same pattern.
-====
+==== Step 1 — Show the starting state
 
-=== Example 3: Host configuration as code, not a login session
-
-The same reconciliation model extends past Kubernetes objects, all the way down to the operating system. Every node — even the single node in this environment — belongs to a `MachineConfigPool`, and every OS-level setting is described declaratively as a `MachineConfig` object, versioned and rendered per pool, instead of living only inside someone's memory of what they once typed over SSH.
-
-. Check the pool status for this cluster. On a single-node cluster, this one node is a member of both the `master` and `worker` pools:
+. Open the *Topology* view for the Online Boutique project. All pods should be green and spread across the three nodes.
+. Open a terminal and show the pod distribution:
 +
+[source,bash,role="execute"]
+----
+oc get pods -n online-boutique -o wide --no-headers | awk '{printf "%-40s %s\n", $1, $7}'
+----
++
+You will see pods spread across two or three different node names.
+
+==== Step 2 — Pick a node and take it offline
+
+. List the nodes:
++
+[source,bash,role="execute"]
+----
+oc get nodes -o wide
+----
+. Choose a node that is running several Online Boutique pods (from the output above). Cordon it to prevent new pods from being scheduled there:
++
+[source,bash,role="execute"]
+----
+oc adm cordon <node-name>
+----
++
+The node status changes to `Ready,SchedulingDisabled`.
+. Now drain it — this evicts all pods from the node:
++
+[source,bash,role="execute"]
+----
+oc adm drain <node-name> --ignore-daemonsets --delete-emptydir-data
+----
+
+==== Step 3 — Watch the migration
+
+. Switch immediately to the *Topology* view for the Online Boutique.
+. Watch the affected pods briefly turn grey (terminating) and then reappear as green (running) — the scheduler placed them on the two surviving nodes.
+. Open the Online Boutique route in the browser — **the application never went down**. The storefront is still responsive throughout.
+. Verify the new distribution:
++
+[source,bash,role="execute"]
+----
+oc get pods -n online-boutique -o wide --no-headers | awk '{printf "%-40s %s\n", $1, $7}'
+----
++
+No pods remain on the cordoned node. All workloads migrated to the surviving two.
+
+[TIP]
+====
+*"I just removed an entire node from the cluster. Every workload that was running there was rescheduled to the remaining nodes in seconds. The application stayed up the whole time. No alert. No runbook. No one on call. This is the same behaviour you get during a planned maintenance window, a rolling OS upgrade, or a real hardware failure."*
+====
+
+==== Step 4 — Bring the node back
+
+. Uncordon the node to restore it to the scheduler:
++
+[source,bash,role="execute"]
+----
+oc adm uncordon <node-name>
+----
++
+The node returns to `Ready` status. Future pod scheduling will use all three nodes again.
+
+NOTE: Existing pods do *not* automatically rebalance back to the restored node — Kubernetes only schedules new pods or pod replacements across all available nodes. This is normal and expected. If you want to demonstrate rebalancing, scale a deployment to 0 and back up, or delete a pod to trigger rescheduling.
+
+---
+
+=== Example 3: Apply a live OS-level change — rolling reboot with zero downtime
+
+The same reconciliation model extends past Kubernetes objects, all the way down to the operating system. Every node belongs to a `MachineConfigPool`, and every OS-level setting is described declaratively as a `MachineConfig` object.
+
+On a three-node cluster, applying a `MachineConfig` triggers a **rolling reboot** — the MCO cordons, drains, applies, reboots, health-checks, and uncordons one node at a time while workloads keep running on the other two. This is safe to do live.
+
+==== Step 1 — Show the current state
+
 [source,bash,role="execute"]
 ----
 oc get machineconfigpool
 ----
-. List the currently rendered configuration applied to the node:
-+
+
+All pools should show `UPDATED=True`, `UPDATING=False`, `DEGRADED=False`.
+
 [source,bash,role="execute"]
 ----
 oc get machineconfig | grep rendered
 ----
-. Explain — rather than execute live, since it triggers a full node reboot — what it would look like to add an NTP server, a kernel argument, or a trusted CA to every node in this cluster:
+
+==== Step 2 — Apply a harmless MachineConfig
+
+This example adds a custom NTP server to the chrony configuration. It is harmless and easily reversible.
+
+. Click the *+* (Import YAML) button and paste:
 +
---
 [source,yaml]
 ----
 apiVersion: machineconfiguration.openshift.io/v1
@@ -122,12 +191,57 @@ spec:
       version: 3.2.0
     storage:
       files:
-        - path: /etc/chrony.conf
+        - path: /etc/chrony.d/demo-ntp.conf
           mode: 0644
           contents:
-            source: data:text/plain;base64,c2VydmVyIDAucm9vay1yZWQuYnJvd24ub3JnCg==
+            source: data:text/plain;charset=utf-8;base64,IyBEZW1vIE5UUCBzZXJ2ZXIgYWRkZWQgYnkgTWFjaGluZUNvbmZpZwpzZXJ2ZXIgdGltZS5nb29nbGUuY29tIGlidXJzdAo=
 ----
---
-. If you apply that (or any) `MachineConfig`, the MCO cordons, drains, applies the change, reboots, health-checks, and uncordons the node automatically — the exact same safe rollout mechanics used for the OTA upgrades in xref:06-chapter04-01-Full-Stack Over-The-Air (OTA) Upgrades.adoc[], just triggered by *your* change instead of a new OpenShift release.
+. Click *Create*.
 
-IMPORTANT: On a single-node cluster, that reboot takes the *entire* environment offline for a few minutes, since there is no second node to absorb workloads in the meantime. Treat this example as optional and time-permitting, or apply it before the audience joins and simply show the resulting `Completed` status afterward — do not trigger a live reboot mid-demo unless you are comfortable with the pause.
+==== Step 3 — Watch the rolling update
+
+. Navigate to *Compute → Nodes* and watch the node statuses.
+. Open the terminal and monitor:
++
+[source,bash,role="execute"]
+----
+oc get machineconfigpool master -w
+----
++
+The `UPDATING` column changes to `True`. The MCO processes one node at a time:
++
+.. Cordons node 1 (`SchedulingDisabled`)
+.. Drains all pods to nodes 2 and 3
+.. Applies the new OS configuration
+.. Reboots node 1
+.. Health-checks node 1
+.. Uncordons node 1 (`Ready`)
+.. Moves to node 2, then node 3
+. While the MCO is working through the nodes, keep the Online Boutique open in a browser tab — **the application stays up throughout the entire process**.
+
+[TIP]
+====
+*"I just changed the operating system configuration on every node in this cluster — live. The platform applied it with zero downtime by rebooting one node at a time and keeping workloads running on the others. This is the same mechanism that runs during a full-stack OTA upgrade: your OS and your platform are updated together, safely, as one automated operation. On plain Kubernetes, there is nothing like this — you SSH into each node, apply changes manually, reboot, hope for the best, and move to the next one."*
+====
+
+==== Step 4 — Verify the change
+
+Once `UPDATED=True` returns on the `master` pool:
+
+[source,bash,role="execute"]
+----
+oc debug node/<any-node-name> -- chroot /host cat /etc/chrony.d/demo-ntp.conf
+----
+
+The output shows the NTP configuration you applied — deployed identically to every node, versioned, auditable, and managed by the same control loop that manages everything else on this cluster.
+
+==== Cleanup
+
+To revert the change (triggers another rolling reboot):
+
+[source,bash,role="execute"]
+----
+oc delete machineconfig 99-demo-chrony
+----
+
+IMPORTANT: The rolling reboot takes approximately *5–10 minutes per node* (15–30 minutes total for a 3-node cluster). Plan for this if running the demo live. Alternatively, apply the MachineConfig *before* the audience joins and show the `Completed` result, or apply it during the OTA upgrades section and let it run in the background.
