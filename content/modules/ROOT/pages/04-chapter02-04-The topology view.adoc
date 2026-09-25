@@ -60,5 +60,3 @@ This keeps the environment clean for the rest of the demo.
 ---
 
 image::topology.png[OpenShift Console Topology view showing the Online Boutique microservices graph,1000,1000]
-
-NOTE: The topology view in dark mode may show low-contrast connector lines between services. Switch to light mode if the connections are hard to read during a presentation.
