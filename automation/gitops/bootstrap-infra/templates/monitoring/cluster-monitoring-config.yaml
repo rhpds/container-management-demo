@@ -1,11 +1,11 @@
-# Generated from https://github.com/rhpds/rhdp-gitops-patterns
+# Generated from https://github.com/rhpds/rhdp-gitops-patterns/examples/agentops-lab
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: cluster-monitoring-config
   namespace: openshift-monitoring
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "-2"
 data:
   config.yaml: |
-    enableUserWorkload: true
+    enableUserWorkload: {{ .Values.monitoring.enableUserWorkload }}

@@ -10,7 +10,7 @@
 #   __DEPLOYER_API_URL__ — https://api.cluster.example.com:6443
 #   __DEPLOYER_GUID__    — RHDP environment GUID
 #   __CATALOG_IMAGE__    — pinned catalog image
-#   __STORAGE_CLASS__    — cluster StorageClass name
+#   __STORAGE_CLASS__    — cluster StorageClass name (for LokiStack)
 #
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -39,6 +39,9 @@ spec:
           value: "__CATALOG_IMAGE__"
         - name: logging.storageClassName
           value: "__STORAGE_CLASS__"
+        # deployer.domain, deployer.apiUrl, deployer.guid, catalog.redhatOperatorsImage,
+        # and logging.storageClassName are deployer-managed. Everything else defaults
+        # from values.yaml.
   destination:
     server: https://kubernetes.default.svc
     namespace: default

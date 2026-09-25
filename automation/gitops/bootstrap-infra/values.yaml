@@ -13,23 +13,32 @@ webTerminal:
   source: rhpds-redhat-operators
   sourceNamespace: openshift-marketplace
 
+monitoring:
+  enableUserWorkload: true
+
 minio:
   namespace: demo-logging-storage
-  image: quay.io/minio/minio:latest
-  mcImage: quay.io/minio/mc:latest
+  image: quay.io/minio/aistor/minio:latest
   rootUser: minioadmin
   rootPassword: minioadmin
   storageSize: 10Gi
-  bucketName: logging-loki
+  bucket: logging-loki
 
 logging:
   namespace: openshift-logging
-  loggingChannel: stable-6.6
-  lokiChannel: stable-6.6
-  source: rhpds-redhat-operators
-  sourceNamespace: openshift-marketplace
-  lokiStackSize: 1x.demo
-  storageClassName: ocs-external-storagecluster-ceph-rbd
+  storageClassName: ""
+  operator:
+    channel: stable-6.6
+    source: rhpds-redhat-operators
+    sourceNamespace: openshift-marketplace
+  loki:
+    channel: stable-6.6
+    source: rhpds-redhat-operators
+    sourceNamespace: openshift-marketplace
+  lokiStack:
+    size: 1x.demo
+    schemaVersion: v13
+    schemaEffectiveDate: "2024-01-01"
 
 observability:
   channel: stable

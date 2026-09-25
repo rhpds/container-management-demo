@@ -1,4 +1,3 @@
-# Generated from https://github.com/rhpds/rhdp-gitops-patterns
 apiVersion: v1
 kind: Namespace
 metadata:

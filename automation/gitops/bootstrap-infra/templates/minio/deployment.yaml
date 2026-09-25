@@ -1,41 +1,4 @@
-# Generated from https://github.com/rhpds/rhdp-gitops-patterns
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: minio
-  namespace: {{ .Values.minio.namespace }}
-  annotations:
-    argocd.argoproj.io/sync-wave: "0"
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: minio
-  template:
-    metadata:
-      labels:
-        app: minio
-    spec:
-      containers:
-        - name: minio
-          image: {{ .Values.minio.image }}
-          args: ["server", "/data", "--console-address", ":9090"]
-          env:
-            - name: MINIO_ROOT_USER
-              value: {{ .Values.minio.rootUser }}
-            - name: MINIO_ROOT_PASSWORD
-              value: {{ .Values.minio.rootPassword }}
-          ports:
-            - containerPort: 9000
-            - containerPort: 9090
-          volumeMounts:
-            - name: data
-              mountPath: /data
-      volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: minio-data
----
+# Generated from https://github.com/rhpds/rhdp-gitops-patterns/examples/agentops-lab
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -44,10 +7,75 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "0"
 spec:
-  accessModes: ["ReadWriteOnce"]
+  accessModes:
+    - ReadWriteOnce
   resources:
     requests:
       storage: {{ .Values.minio.storageSize }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  namespace: {{ .Values.minio.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    app: minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+        - name: minio
+          image: {{ .Values.minio.image }}
+          args:
+            - server
+            - /data
+            - --console-address
+            - :9090
+          env:
+            - name: MINIO_ROOT_USER
+              value: {{ .Values.minio.rootUser }}
+            - name: MINIO_ROOT_PASSWORD
+              value: {{ .Values.minio.rootPassword }}
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+            - containerPort: 9090
+              protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: 9000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 9000
+            initialDelaySeconds: 30
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 20m
+              memory: 100Mi
+            limits:
+              cpu: 250m
+              memory: 1Gi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: minio-data
 ---
 apiVersion: v1
 kind: Service

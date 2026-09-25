@@ -1,4 +1,3 @@
-# Generated from https://github.com/rhpds/rhdp-gitops-patterns
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:

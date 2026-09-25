@@ -1,11 +1,11 @@
-# Generated from https://github.com/rhpds/rhdp-gitops-patterns
+# Wave 2: requires SA + RBAC (wave -1), CA bundle (wave 0), and LokiStack (wave 1).
 apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 metadata:
   name: instance
   namespace: {{ .Values.logging.namespace }}
   annotations:
-    argocd.argoproj.io/sync-wave: "4"
+    argocd.argoproj.io/sync-wave: "2"
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   serviceAccount:

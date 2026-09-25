@@ -1,4 +1,5 @@
-# Generated from quay.io/rhpds/olm_snapshot_redhat_catalog — pinned for reproducibility
+# Generated from https://github.com/rhpds/rhdp-gitops-patterns/examples/agentops-lab
+# One CatalogSource for every redhat-operators Subscription in this chart.
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:

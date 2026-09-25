@@ -1,27 +1,56 @@
-# Generated from https://github.com/rhpds/rhdp-gitops-patterns
+# Generated from https://github.com/rhpds/rhdp-gitops-patterns/examples/agentops-lab
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: minio-manage
+  namespace: {{ .Values.minio.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: minio-manage-rb
+  namespace: {{ .Values.minio.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: admin
+subjects:
+  - kind: ServiceAccount
+    name: minio-manage
+    namespace: {{ .Values.minio.namespace }}
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: create-loki-bucket
+  name: create-minio-bucket
   namespace: {{ .Values.minio.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "1"
     argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
-  backoffLimit: 10
+  backoffLimit: 4
   template:
     spec:
-      restartPolicy: OnFailure
+      serviceAccountName: minio-manage
+      restartPolicy: Never
       containers:
-        - name: mc
-          image: {{ .Values.minio.mcImage }}
+        - name: create-bucket
+          image: image-registry.openshift-image-registry.svc:5000/openshift/tools:latest
+          imagePullPolicy: IfNotPresent
           command:
-            - /bin/sh
+            - /bin/bash
             - -c
             - |
-              until mc alias set local http://minio.{{ .Values.minio.namespace }}.svc:9000 {{ .Values.minio.rootUser }} {{ .Values.minio.rootPassword }}; do
-                echo "Waiting for MinIO..."
-                sleep 5
-              done
-              mc mb --ignore-existing local/{{ .Values.minio.bucketName }}
+              echo "Waiting for MinIO pod in {{ .Values.minio.namespace }}"
+              oc -n {{ .Values.minio.namespace }} wait pod -l app=minio \
+                --for=condition=Ready --timeout=180s
+              echo "MinIO pod is running"
+              oc -n {{ .Values.minio.namespace }} rsh \
+                $(oc -n {{ .Values.minio.namespace }} get pod -l app=minio -o name) \
+                mkdir -p /data/{{ .Values.minio.bucket }}
+              echo "Bucket {{ .Values.minio.bucket }} created"
