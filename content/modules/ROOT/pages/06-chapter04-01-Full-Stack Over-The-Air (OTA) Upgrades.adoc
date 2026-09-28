@@ -6,7 +6,7 @@
 Position OTA upgrades as one supported, versioned operation covering the operating system and the platform together — not a checklist of independently-versioned components to keep in sync yourself.
 
 === Show
-Walk through the update channel and cluster settings screens and explain exactly what happens on this single-node cluster when an update is triggered.
+Walk through the update channel and cluster settings screens, explain exactly what happens on this 3-node compact cluster when an update is triggered, and optionally start a live rolling upgrade that the audience can watch.
 
 == The Upgrading Process
 
@@ -16,17 +16,17 @@ The cluster update generally occurs in two main phases:
 
 . *Cluster Version Operator (CVO) target update payload deployment*: The update begins when the CVO queries the OpenShift Update Service (OSUS) for valid update paths based on an update graph. The CVO retrieves the target release image and applies its manifests in separate, logical stages called Runlevels. The CVO ensures that all cluster Operators in the active Runlevel reach a stable state (e.g., reporting Available=True and Degraded=False) before proceeding to the next Runlevel.
 
-. *Machine Config Operator (MCO) node updates*: Once the control plane is updated, the MCO applies the new configuration and operating system to every compute and control plane node. The MCO performs sequential actions on the nodes: it cordons and drains the nodes to safely evict pods, applies the operating system update, reboots the machine, and finally uncordons the node to schedule workloads again.
+. *Machine Config Operator (MCO) node updates*: Once the control plane is updated, the MCO applies the new configuration and operating system to every node. The MCO performs sequential actions on the nodes: it cordons one node to prevent new scheduling, drains all pods to the remaining nodes, applies the operating system update, reboots the machine, health-checks it, uncordons the node — and then moves to the next one.
 
 This is the detail worth pausing on with a technical audience: *the operating system and the Kubernetes platform are versioned, tested, and rolled out together, as a single supported artifact.* You are not separately tracking a base OS patch level, a container runtime version, a CNI plugin release, and an orchestrator version, then hoping the combination has actually been tested together. One update graph, one supported path, one rollback story.
 
+=== Zero-downtime rolling upgrades on this compact cluster
+
+This demo runs on a *3-node compact cluster*, where all three nodes serve as both control plane and worker. The MCO's cordon-drain-reboot-uncordon sequence happens *one node at a time*: while one node reboots, workloads keep running on the other two. This means true *zero-downtime rolling updates* — the same mechanism used in production clusters of any size.
+
+This is the operational story worth making explicit: the upgrade is one fully automated, auditable operation. No maintenance window needed. No SSH. No separate OS patching tool. The cluster upgrades itself safely, node by node, while your applications stay up.
+
 NOTE: For disconnected environments, if your cluster is in a restricted network and cannot access the public internet, you can install a local instance of the OpenShift Update Service. This allows you to mirror the update graphs and release images locally, providing a similar OTA update experience without needing a direct connection to Red Hat's public APIs.
-
-=== A note for this single-node environment
-
-On a *multi-node* cluster, the MCO's cordon-drain-reboot-uncordon sequence happens one node at a time, so workloads are simply rescheduled onto the nodes that are not currently updating — true zero-downtime rolling updates.
-
-This demo runs on a *Single Node OpenShift (SNO)* cluster, where the control plane and the only worker are the same machine. There is nowhere else to move a pod to, so the reboot step does briefly interrupt workloads on this specific node. What does not change is everything upstream of that reboot: the update path is still validated against the graph, every `ClusterOperator` still has to report healthy before the node update proceeds, and the whole sequence is still one fully automated, auditable operation rather than a manually staged, multi-tool process. That is the point worth making to an audience evaluating operational effort, independent of topology: a bigger cluster gets you zero-downtime for free using this exact same mechanism, a smaller one still gets a safe, fully automated, single-command upgrade.
 
 === Update Channels
 
@@ -34,21 +34,16 @@ In OpenShift Container Platform, *update channels* allow you to declare the mino
 
 image::update-path.png[Update Path,1000,1000]
 
-Using version 4.21 as an example, the following update channels are available:
+Using version 4.22 as an example, the following update channels are available:
 
-* *Fast channel (fast-4.21)*: This channel is updated with new versions of OpenShift Container Platform as soon as Red Hat declares them generally available (GA). These releases are fully supported and intended for use in production environments.
-* *Stable channel (stable-4.21)*: Releases are added to the stable channel after a delay from when they were published in the fast channel. During this delay, data is collected from multiple sources and analyzed for product regressions. Once enough data is collected and stability is verified, the release is promoted to the stable channel. Newly installed clusters use the stable channel by default.
-* *EUS channel (eus-4.y)*: Offered for all even-numbered minor versions, this channel provides Extended Update Support (EUS). When releases are promoted to the stable channel, they are simultaneously promoted to the EUS channel. The primary purpose of this channel is to serve as a convenience for clusters performing a Control Plane Only update (jumping between even-numbered EUS versions).
-* *Candidate channel (candidate-4.21)*: This channel provides unsupported, early access to releases as soon as they are built. Candidate releases might lack the full feature set of eventual GA releases, have not gone through full Red Hat Quality Assurance, and might not offer update paths to later GA releases. This channel is strictly suitable for testing purposes where destroying and recreating a cluster is acceptable.
+* *Fast channel (fast-4.22)*: This channel is updated with new versions of OpenShift Container Platform as soon as Red Hat declares them generally available (GA). These releases are fully supported and intended for use in production environments.
+* *Stable channel (stable-4.22)*: Releases are added to the stable channel after a delay from when they were published in the fast channel. During this delay, data is collected from multiple sources and analyzed for product regressions. Once enough data is collected and stability is verified, the release is promoted to the stable channel. Newly installed clusters use the stable channel by default.
+* *EUS channel (eus-4.22)*: Offered for all even-numbered minor versions, this channel provides Extended Update Support (EUS). When releases are promoted to the stable channel, they are simultaneously promoted to the EUS channel. The primary purpose of this channel is to serve as a convenience for clusters performing a Control Plane Only update (jumping between even-numbered EUS versions).
+* *Candidate channel (candidate-4.22), candidate-4.23, candidate-5*: This channel provides unsupported, early access to releases as soon as they are built. Candidate releases might lack the full feature set of eventual GA releases, have not gone through full Red Hat Quality Assurance, and might not offer update paths to later GA releases. This channel is strictly suitable for testing purposes where destroying and recreating a cluster is acceptable.
 
 == Demonstration
 
-[IMPORTANT]
-====
-Do *not* trigger the upgrade during the demo. On this single-node cluster, the MCO reboot step will take the entire environment offline for several minutes — including the web console, the terminal, and all demo workloads. Instead, walk through the upgrade UI to show the audience how simple the process is, and leave the actual trigger as the very last action of the full demo session once all chapters are complete.
-====
-
-=== Walk through the upgrade UI (show, don't trigger)
+=== Walk through the upgrade UI
 
 . Log in to the web console as a user with the `cluster-admin` role.
 . Navigate to *Administration → Cluster Settings*.
@@ -58,18 +53,29 @@ Do *not* trigger the upgrade during the demo. On this single-node cluster, the M
 ** Configured update channel
 ** Available updates list
 . Under *Update Channel*, show the available channels and explain the `fast`, `stable`, and `eus` options in the context of what your customer's change management process requires.
-. Click through to the available update — show the version, the release notes link, and the *Update* button — but do not click *Update* yet.
-. Explain what would happen if you did click it: the CVO fetches the release image, applies it Runlevel by Runlevel (each `ClusterOperator` must report healthy before the next Runlevel starts), and only then does the MCO take over — cordon, drain, apply the OS image, reboot, health-check, uncordon. One command, fully automated, OS included.
+. Click through to the available update — show the version, the release notes link, and the *Update* button.
+. Explain what happens when you click it: the CVO fetches the release image, applies it Runlevel by Runlevel (each `ClusterOperator` must report healthy before the next Runlevel starts), then the MCO takes over — processing one node at a time: cordon → drain → apply the OS image → reboot → health-check → uncordon → move to the next node. One command, fully automated, OS included, zero downtime.
 
 [TIP]
 ====
-*"On a multi-node cluster this reboot happens one node at a time, so workloads keep running on the other nodes — true zero-downtime rolling updates. On this single-node environment the reboot is the only interruption, but the automation and the safety checks are identical. You are not separately tracking a base OS patch level, a container runtime version, a CNI plugin release, and an orchestrator version, then hoping the combination has been tested together. One update graph, one supported path, one rollback story."*
+*"When I trigger this update, the CVO fetches the new release image and applies it Runlevel by Runlevel. Once every ClusterOperator reports healthy, the MCO takes over. It cordons one node, drains all workloads to the other two, applies the OS image, reboots, health-checks, uncordons — and moves to the next node. The entire cluster stays up the whole time. You are not separately tracking a base OS, a container runtime, a CNI plugin, and an orchestrator version, hoping they have been tested together. One update graph, one supported path, one rollback story."*
 ====
 
 image::update-process.png[Update Process,1000,1000]
 
-=== Trigger the upgrade (end of demo only)
+=== Trigger the upgrade (optional — can be done live)
 
-Once every other chapter has been demonstrated and the audience has seen everything they need to see, come back to *Administration → Cluster Settings* and click *Update*.
+Because this is a 3-node cluster with rolling upgrades, you can trigger the update live during the demo. The environment stays fully functional throughout.
 
-The upgrade will run unattended. If the demo environment is left running overnight, it will have completed by the next session. The new version — OS and platform together — will be visible directly on the Cluster Settings page.
+. Click *Update* on the available version.
+. Navigate to *Compute → Nodes* and watch the node statuses — the MCO processes one node at a time:
+** Node 1 shows `SchedulingDisabled` → pods drain to nodes 2 and 3 → reboot → returns to `Ready`
+** Node 2 takes its turn, then node 3
+. While the upgrade progresses, all demo workloads (Online Boutique, Grafana, etc.) remain accessible.
+
+[TIP]
+====
+*"The upgrade is running right now — and everything else still works. This is a production-grade rolling update: one node at a time, zero downtime. The OS and the platform, upgraded together, automatically."*
+====
+
+NOTE: The full upgrade takes 30–60 minutes to complete all three nodes. You can trigger it at the beginning of Module 4 and let it run in the background while presenting the rest of the content, or trigger it at the end of the session and let it complete overnight. The new version — OS and platform together — will be visible on the Cluster Settings page.

@@ -6,7 +6,7 @@
 Position OpenShift's control loops as the reason clusters recover from mistakes and failures automatically, without a human re-running a script or SSHing into a box to fix drift.
 
 === Show
-Break something on purpose — a workload, a platform component, and an entire node — live, and watch OpenShift repair it in real time across the three-node cluster.
+Break something on purpose — a workload, a platform component, and an entire node — live, and watch OpenShift repair it in real time across the three-node compact cluster.
 
 == Introduction
 
@@ -14,12 +14,14 @@ Every layer of OpenShift is not just installed once and left alone — it is *co
 
 * *User workloads*: A `Deployment`'s `ReplicaSet` controller keeps the requested number of pods running. This is the well-known Kubernetes pattern, and you already saw it in xref:04-chapter02-01-Using Operators - Crunchy PostgreSQL.adoc[] when a deleted database pod was replaced automatically.
 * *Platform components*: Every entry under `Administration -> Cluster Settings -> ClusterOperators` — the console, the image registry, ingress, monitoring, and dozens more — is itself managed by an Operator that continuously enforces its own desired state. These are not install scripts that run once and walk away; they keep watching, forever.
-* *Host configuration*: The *Machine Config Operator (MCO)* extends the same reconciliation model down to the operating system itself. Kernel arguments, NTP configuration, SSH keys, and kubelet settings are described declaratively as versioned `MachineConfig` objects, rendered per node pool — not a one-time provisioning script or a manually maintained golden image.
+* *Host configuration*: The *Machine Config Operator (MCO)* extends the same reconciliation model down to the operating system itself. Kernel arguments, NTP configuration, SSH keys, and kubelet settings are described declaratively as versioned `MachineConfig` objects, rendered per node pool — not a one-time provisioning script or a manually maintained golden image. On this compact cluster, all three nodes belong to the `master` pool because they serve as both control plane and worker.
 * *Compute infrastructure*: On cloud-backed clusters, the *Machine API* (`Machine` and `MachineSet` resources) takes this one level further — if a VM instance disappears, a `MachineSet` notices and replaces it automatically.
 
 This is the operational story worth making explicit to a technical audience: you do not need a separate toolchain, a scheduled cron job, or a runbook page titled "if X breaks, SSH in and fix it" for a wide class of problems. The platform is opinionated enough to detect and repair drift before a human ever gets paged.
 
 == Demonstration
+
+This demo runs on a *3-node compact cluster* — all three nodes serve as both control plane and worker. This topology lets you demonstrate node-level failures and rolling OS changes with *zero downtime*, because workloads always have two surviving nodes to run on.
 
 === The OpenShift difference vs. vanilla Kubernetes
 
@@ -155,7 +157,7 @@ NOTE: Existing pods do *not* automatically rebalance back to the restored node �
 
 The same reconciliation model extends past Kubernetes objects, all the way down to the operating system. Every node belongs to a `MachineConfigPool`, and every OS-level setting is described declaratively as a `MachineConfig` object.
 
-On a three-node cluster, applying a `MachineConfig` triggers a **rolling reboot** — the MCO cordons, drains, applies, reboots, health-checks, and uncordons one node at a time while workloads keep running on the other two. This is safe to do live.
+On a three-node compact cluster, applying a `MachineConfig` triggers a **rolling reboot** — the MCO cordons, drains, applies, reboots, health-checks, and uncordons one node at a time while workloads keep running on the other two. Because all nodes belong to the `master` pool, the MCO processes all three in sequence. This is safe to do live.
 
 ==== Step 1 — Show the current state
 

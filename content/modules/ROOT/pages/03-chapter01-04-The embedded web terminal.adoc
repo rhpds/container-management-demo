@@ -31,7 +31,6 @@ One of the most tedious parts of working with Kubernetes is managing login token
 == Contextual Awareness
 The terminal is tightly integrated with the console's UI.
 
-* *Project Sync*: If you are looking at a specific project (namespace) in the Developer perspective and open the terminal, it defaults to that project automatically.
 * *Side-by-Side Troubleshooting*: You can keep the terminal open as a "drawer" at the bottom of the screen. This allows you to watch logs or resource statuses in the GUI while simultaneously running commands to fix issues.
 
 == Accessibility in Restricted Environments
@@ -60,15 +59,10 @@ This walkthrough uses the Grafana instance deployed in the Software Catalog sect
 +
 [source,bash]
 ----
-oc project
+oc project grafana-demo
 ----
 +
-The output confirms you are already scoped to `grafana-demo` — no login, no kubeconfig, no context switching required.
-
-[TIP]
-====
-This is the *Contextual Awareness* feature in action. The terminal inherited the namespace from wherever you were in the UI. Point it out to the audience before running the next commands.
-====
+There is no need for login, no kubeconfig or installing anything. The terminal is ready to use.
 
 === Step 2 — Retrieve the Grafana admin password
 
@@ -93,7 +87,7 @@ Get an interactive shell inside the Grafana container:
 
 [source,bash]
 ----
-oc exec -it $(oc get pod -l app=grafana -o name | head -1) -- /bin/sh
+oc exec -it $(oc get pod -l app=grafana-demo -o name | head -1) -- /bin/sh
 ----
 
 Once inside, inspect the runtime configuration injected by the Operator:

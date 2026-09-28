@@ -32,26 +32,26 @@ Administrators can use `AdminNetworkPolicy` (ANP) and `BaselineAdminNetworkPolic
 
 * *BaselineAdminNetworkPolicy*: This applies a sensible baseline level of network security across the cluster that only takes effect when no other network policy overrides it.
 
-== Demonstration: Isolating a Microservice in a Live Application
+== Demonstration: Network Isolation in a Live Application
 
-This demo uses the *Online Boutique* already running from Chapter 2. No new deployments or YAML setup is needed — the app is the prop.
+This demo uses the *Online Boutique* already running from Chapter 2. No new deployments are needed — the app is the prop.
 
-The audience will watch a real application feature break when a NetworkPolicy is applied, and recover when a surgical allow rule is added. This makes the impact of network isolation tangible without any prior security knowledge.
+The audience will see a running application become unreachable when a NetworkPolicy is applied, recover when a surgical allow rule is added, and then see east-west (service-to-service) isolation proven from the terminal. This makes the impact of network isolation tangible without any prior security knowledge.
 
 [TIP]
 ====
-*"I'm not changing the application code. I'm not touching the firewall. I'm going to isolate one microservice with a single policy and show you exactly what that means for the application and for an attacker."*
+*"I'm not changing the application code. I'm not touching the firewall. I'm going to isolate services with a few lines of policy and show you exactly what that means for the application and for an attacker."*
 ====
 
 === Before you start — verify the pod labels
 
-The NetworkPolicy pod selector must match the labels on the cart service pods. Before the demo, confirm the label in use:
+The NetworkPolicy pod selectors must match the labels on your pods. Before the demo, confirm the labels in use:
 
 . Navigate to the Online Boutique project in the *Topology* view.
-. Click the `cartservice` workload.
-. Open the *Details* tab and check the *Labels* field.
+. Click the `cartservice` workload → *Details* tab → check the *Labels* field.
+. Click the `frontend` workload → *Details* tab → check the *Labels* field.
 
-The standard Google Online Boutique Helm chart uses `app=cartservice` and `app=frontend`. If your chart uses a different scheme (e.g. `app.kubernetes.io/name`), substitute accordingly in the steps below.
+The standard Google Online Boutique Helm chart uses `app=cartservice` and `app=frontend`. If your chart uses a different scheme (e.g. `app.kubernetes.io/name`), substitute accordingly in the YAML below.
 
 === Step 1 — Show the app working (baseline)
 
@@ -61,76 +61,162 @@ The standard Google Online Boutique Helm chart uses `app=cartservice` and `app=f
 
 [TIP]
 ====
-*"Right now every microservice in this application can talk to every other microservice freely. This is the default. In a real environment, you would want to lock this down so that a compromised service cannot reach payment or user data services."*
+*"Right now every microservice in this application can talk to every other microservice freely — across all three nodes. This is the Kubernetes default. In a real environment, you would want to lock this down so that a compromised service cannot reach payment or user data services."*
 ====
 
-=== Step 2 — Apply a deny-all policy to the cart service
+=== Step 2 — Block all external traffic to the frontend
 
-. In the Online Boutique project, navigate to *Networking → NetworkPolicies*.
-. Click *Create NetworkPolicy* and fill in the form:
+This demonstrates *north-south isolation*: blocking traffic coming into the application from outside the cluster.
+
+. Click the *+* (Import YAML) button and paste:
 +
-[cols="1,2"]
-|===
-| Field | Value
-
-| Name | `deny-cartservice-ingress`
-| Pod selector — Key | `app`
-| Pod selector — Value | `cartservice`
-| Policy type | ✅ Deny all ingress traffic
-|===
+[source,yaml]
+----
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-frontend-ingress
+  namespace: online-boutique
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend
+  policyTypes:
+    - Ingress
+----
 +
 . Click *Create*.
-
-image::network-policies.png[Network Policies,1000,1000]
-
-=== Step 3 — Show the application breaking
-
-. Return to the Online Boutique in the browser and refresh the page.
-. Click *Add to Cart* on any product.
-. The cart operation fails — the storefront degrades gracefully but the cart feature is unavailable.
+. Return to the Online Boutique browser tab and *hard-refresh* (Ctrl+Shift+R).
+. The page returns a *503* or *Application is not available* error within a few seconds.
 
 [TIP]
 ====
-*"One policy. One pod selector. That service is now invisible to the rest of the cluster — including the frontend that needs it. No firewall changes, no application restarts, no code changes. The platform enforced it instantly."*
+*"One policy. The application is offline. The OpenShift Router can no longer reach the frontend pods because the policy denies all incoming traffic — from any source, including the router. No firewall changes, no application restart, no code change."*
 ====
 
-=== Step 4 — Add a surgical allow rule
+=== Step 3 — Allow traffic only from the OpenShift Router
 
-Now restore cart access — but only from the frontend service. Every other pod on the cluster remains blocked.
+Now restore external access — but only from the OpenShift Router. Every other source remains blocked.
 
-. Click *Create NetworkPolicy* again:
+. Click *+* (Import YAML) and paste:
 +
-[cols="1,2"]
-|===
-| Field | Value
-
-| Name | `allow-frontend-to-cartservice`
-| Pod selector — Key | `app`
-| Pod selector — Value | `cartservice`
-| Add Ingress rule | Allow from pods where Key=`app`, Value=`frontend`
-|===
+[source,yaml]
+----
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-router-to-frontend
+  namespace: online-boutique
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-ingress
+----
 +
 . Click *Create*.
-
-=== Step 5 — Verify the app recovers
-
-. Reload the Online Boutique and add an item to the cart.
-. The cart works again — only the frontend can reach `cartservice`.
-
-=== Step 6 — Show both policies together
-
-. Navigate to *Networking → NetworkPolicies* and show both policies listed side by side.
+. Refresh the Online Boutique — the storefront is back. Browse a product, add to cart — everything works.
 
 [TIP]
 ====
-*"This is zero-trust networking for microservices. The cart service now accepts traffic from exactly one source — the frontend — and rejects everything else. Any other pod on this cluster, in this namespace or any other, is denied. That is east-west traffic control, enforced by the platform, not the application. If the payment service is ever compromised, it cannot reach the cart. If a new pod is deployed without the right labels, it cannot reach the cart. The default is deny — trust is explicit and narrow."*
+*"The application is back — but the frontend now accepts traffic from exactly one source: the OpenShift Router. Any pod inside the cluster that tries to reach the frontend directly is still denied. This is north-south zero-trust: external access is explicit, not assumed."*
+====
+
+=== Step 4 — Isolate the cart service (east-west)
+
+Now demonstrate *east-west isolation*: controlling traffic between microservices inside the cluster.
+
+Apply both a deny-all and a surgical allow rule *at the same time* so the application keeps working while the cart service becomes invisible to everything except the frontend:
+
+. Click *+* (Import YAML) and paste the following multi-document YAML:
++
+[source,yaml]
+----
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-cartservice-ingress
+  namespace: online-boutique
+spec:
+  podSelector:
+    matchLabels:
+      app: cartservice
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-to-cartservice
+  namespace: online-boutique
+spec:
+  podSelector:
+    matchLabels:
+      app: cartservice
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+----
++
+. Click *Create*.
+. Refresh the Online Boutique and add an item to the cart — *it still works*. The frontend is whitelisted.
+
+[TIP]
+====
+*"I just applied two policies: one blocks all traffic to the cart service, and the other grants an exception for the frontend. The application works because the frontend is explicitly trusted. But the cart service is now invisible to every other pod on this cluster."*
+====
+
+=== Step 5 — Prove isolation from the web terminal
+
+Open the web terminal (>_ icon) and try to reach the cart service directly:
+
+[source,bash]
+----
+curl -m 3 http://cartservice.online-boutique.svc:7070
+----
+
+The command times out after 3 seconds:
+[source]
+----
+curl: (28) Connection timed out after 3001 milliseconds
+----
+
+[TIP]
+====
+*"The terminal represents any pod outside the trusted path. It cannot reach the cart service — the connection is silently dropped. But the frontend, which carries the right label, reaches it just fine. If the payment service were compromised, it could not pivot to the cart. If a rogue container were deployed in this namespace, it could not reach customer data. The default is deny — trust is explicit and narrow."*
+====
+
+=== Step 6 — Show all policies in the console
+
+. Navigate to *Networking → NetworkPolicies* in the Online Boutique project.
+. Four policies are listed:
+* `deny-frontend-ingress` — blocks all external traffic to the frontend
+* `allow-router-to-frontend` — allows only the OpenShift Router
+* `deny-cartservice-ingress` — blocks all traffic to the cart service
+* `allow-frontend-to-cartservice` — allows only the frontend
+
+[TIP]
+====
+*"Four policies, zero code changes. The application is fully functional for end users, but its internal attack surface is drastically reduced. A compromised service can only reach the services explicitly listed in its allow rules — everything else is denied. This is zero-trust networking enforced by the platform, not the application."*
 ====
 
 === Cleanup
 
-To restore the application to its original state, delete both policies:
+To restore the application to its original state, delete all four policies:
 
 . *Networking → NetworkPolicies*
-. Delete `deny-cartservice-ingress` and `allow-frontend-to-cartservice` from the Actions menu of each.
+. Delete each policy from the three-dot menu, or run from the terminal:
++
+[source,bash]
+----
+oc delete networkpolicy deny-frontend-ingress allow-router-to-frontend \
+  deny-cartservice-ingress allow-frontend-to-cartservice -n online-boutique
+----
 
 The application returns to open communication between all services.
