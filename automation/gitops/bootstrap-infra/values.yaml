@@ -26,7 +26,7 @@ minio:
 
 logging:
   namespace: openshift-logging
-  storageClassName: ""
+  storageClassName: ocs-external-storagecluster-ceph-rbd
   operator:
     channel: stable-6.6
     source: rhpds-redhat-operators

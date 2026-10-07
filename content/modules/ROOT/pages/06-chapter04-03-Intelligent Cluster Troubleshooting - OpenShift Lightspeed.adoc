@@ -19,7 +19,7 @@ For operators and cluster administrators, *OpenShift Lightspeed* provides severa
 * *Context-Aware Troubleshooting*: When managing multicluster environments, operators can use the Attach feature to automatically add relevant cluster resource details (such as YAML files from ``ManagedCluster`` and ``ManagedClusterInfo`` resources) as context to the AI agent's conversation. This allows the assistant to provide highly specific and relevant answers to complex questions.
 * *Centralized Visibility*: Operators do not need to leave the OpenShift web console to monitor cluster health. The Home Overview page features a Red Hat Lightspeed Status card that summarizes the number of potential issues grouped by risk, offering direct links to detailed reports in OpenShift Cluster Manager.
 
-NOTE: OpenShift Lightspeed does not provide the LLM for you, so you must configure the LLM before installing the OpenShift Lightspeed Operator. The OpenShift Lightspeed Service can rely on OpenAI, Microsoft Azure OpenAI and IBM watsonx as SaaS LLM providers. Check how to configure your LLM https://docs.redhat.com/en/documentation/red_hat_openshift_lightspeed/1.0/html/configure/ols-configuring-openshift-lightspeed#ols-creating-the-credentials-secret-using-web-console_ols-configuring-openshift-lightspeed[here]
+NOTE: OpenShift Lightspeed does not provide the LLM for you, so you must configure the LLM before installing the OpenShift Lightspeed Operator. The OpenShift Lightspeed Service can rely on OpenAI, Microsoft Azure OpenAI and IBM watsonx as SaaS LLM providers. In this lab, the LLM is already configured and ready to use.
 
 
 == Demonstration
