@@ -1,11 +1,6 @@
 = Initial Setup
 
-This page covers everything that must be in place *before* the audience joins. Work through each section in order. Allow approximately *30–45 minutes* on a freshly provisioned cluster.
-
-[IMPORTANT]
-====
-Do not skip this setup or attempt to do it live during the demo. Several steps take minutes to reconcile, and the logging and observability stacks must be fully operational before Chapter 5 begins. Starting the demo without completing this page will cause sections to fail visibly in front of the audience.
-====
+This page covers everything that must be in place *before* the audience joins. It should have been already created when provisioning the cluster. The steps below are only to verify that the prerequisites are in place.
 
 == Cluster prerequisites
 
@@ -280,7 +275,7 @@ spec:
 [source,bash,role="execute"]
 ----
 oc get pods -n openshift-logging
-oc logs -n openshift-logging -l app.kubernetes.io/name=collector --tail=10
+oc logs -n openshift-logging -l app.kubernetes.io/instance=instance --tail=10
 ----
 
 ---
@@ -350,7 +345,7 @@ Run through this checklist immediately before the audience joins:
 | 2 | `oc get pods -n openshift-user-workload-monitoring` — all pods Running | ☐
 | 3 | MinIO pod Running: `oc get pods -n demo-logging-storage` | ☐
 | 4 | LokiStack pods Running: `oc get pods -n openshift-logging` | ☐
-| 5 | Collector DaemonSet running: `oc get pods -n openshift-logging -l app.kubernetes.io/name=collector` | ☐
+| 5 | Collector DaemonSet running: `oc get pods -n openshift-logging -l app.kubernetes.io/instance=instance` | ☐
 | 6 | All three UIPlugins `Available`: `oc get uiplugin` | ☐
 | 7 | Console hard-refreshed after UIPlugin setup | ☐
 | 8 | `Observe → Logs` view appears in the console (confirms logging plugin active) | ☐
