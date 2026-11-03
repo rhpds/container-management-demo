@@ -85,30 +85,6 @@ data:
 ----
 . Wait a minute, then repeat the check above. The monitoring stack creates the `openshift-user-workload-monitoring` namespace after it reads the ConfigMap. No manual restart is required.
 
-[#developer-perspective]
-== Developer perspective
-
-Required for: the Helm chart installs and the Topology view in Chapter 2.
-
-This console setting is not part of the `bootstrap-infra` application. Confirm it even when every other check on this page passes.
-
-=== Confirm it is enabled
-
-Open the perspective switcher in the top-left of the console. *Developer* must be listed next to *Administrator*.
-
-If it is listed, continue to the next section.
-
-=== If it is missing
-
-. From a terminal, run:
-+
-[source,bash,role="execute"]
-----
-oc patch console.operator.openshift.io/cluster --type=merge -p '{"spec":{"customization":{"perspectives":[{"id":"dev","visibility":{"state":"Enabled"}}]}}}'
-----
-. Hard-refresh the console (Ctrl+Shift+R).
-. Confirm *Developer* appears in the perspective switcher. The Helm Charts filter in the Software Catalog depends on this perspective.
-
 [#minio]
 == MinIO
 
@@ -487,30 +463,26 @@ Run this immediately before the audience joins. Every row should already be true
 | ☐
 
 | 3
-| Developer perspective listed in the perspective switcher
-| ☐
-
-| 4
 | User workload monitoring pods `Running`: `oc get pods -n openshift-user-workload-monitoring`
 | ☐
 
-| 5
+| 4
 | MinIO pod `Running` and bucket present: `oc get pods -n demo-logging-storage` and `oc exec -n demo-logging-storage deploy/minio -- ls /data/logging-loki`
 | ☐
 
-| 6
+| 5
 | LokiStack `Ready` and `logging-loki-*` pods `Running` in `openshift-logging`
 | ☐
 
-| 7
+| 6
 | Collector DaemonSet `instance` ready on every node: `oc get daemonset instance -n openshift-logging`
 | ☐
 
-| 8
+| 7
 | UIPlugins `monitoring`, `logging`, and `troubleshooting-panel` are `Available`
 | ☐
 
-| 9
+| 8
 | Console hard-refreshed, *Observe → Logs* is visible, and an alert shows the Troubleshooting Panel
 | ☐
 |===

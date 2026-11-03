@@ -67,7 +67,6 @@ Provisioning already installs the logging and observability stack. Use xref:00-i
 === Environment health
 
 * [ ] Console is reachable and the cluster is fully healthy (green status on the Main Dashboard)
-* [ ] Developer perspective is enabled — the perspective switcher shows *Developer* as an option (see xref:00-initial-setup.adoc#developer-perspective[Developer perspective])
 * [ ] OpenShift Virtualization Operator reports `Succeeded` (required for Virtualization perspective)
 * [ ] Red Hat ACM Operator reports `Succeeded` (required for Fleet Management perspective)
 * [ ] Web Terminal Operator reports `Succeeded` and the terminal icon appears in the top-right toolbar
@@ -84,8 +83,6 @@ Provisioning already installs the logging and observability stack. Use xref:00-i
 
 == Troubleshooting Common Issues
 
-* *Developer perspective or Helm Charts filter not visible in the catalog*
-** Enable it from xref:00-initial-setup.adoc#developer-perspective[Developer perspective], then hard-refresh the console (Ctrl+Shift+R)
 * *Grafana instance stuck in `Pending`*
 ** Check that the `grafana-demo` namespace was selected at install time and that the Operator CSV shows `Succeeded`
 ** When creating the instance, use YAML view and omit `spec.external` entirely — that field is for connecting to an existing Grafana Cloud instance

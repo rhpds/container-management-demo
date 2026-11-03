@@ -53,7 +53,7 @@ This walkthrough uses the Grafana instance deployed in the Software Catalog sect
 
 === Step 1 — Open the terminal in context
 
-. In the console, navigate to the `grafana-demo` project in the *Developer* or *Administrator* perspective.
+. In the console, navigate to the `grafana-demo` project.
 . Click the terminal icon (>_) in the top-right corner of the console.
 . Once the terminal opens, run:
 +
