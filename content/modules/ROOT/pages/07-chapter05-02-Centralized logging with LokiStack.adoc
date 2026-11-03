@@ -22,7 +22,7 @@ TIP: The Loki Operator ships a purpose-built sizing profile called *`1x.demo`*. 
 
 [NOTE]
 ====
-*Pre-demo requirement:* The full LokiStack stack (MinIO, Loki Operator, OpenShift Logging Operator, LokiStack instance, ClusterLogForwarder) must be deployed before this section. Allow 10–15 minutes on a fresh cluster. See xref:00-initial-setup.adoc[Initial Setup] for step-by-step instructions.
+*Pre-demo requirement:* MinIO, the Logging and Loki Operators, the LokiStack, and the ClusterLogForwarder are created during provisioning. Confirm them with xref:00-initial-setup.adoc[Initial Setup] before this section, and use the manual steps there only for a component that is missing. A LokiStack created by hand can take 10–15 minutes to become `Ready`.
 ====
 
 == Demonstration

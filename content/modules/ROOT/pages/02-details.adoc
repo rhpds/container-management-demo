@@ -53,23 +53,21 @@ Use the table below to plan your session:
 
 == Credentials
 
-Use the environment values provided by Red Hat Demo Platform. Typical console access:
+Log into OpenShift with the following credentials:
 
-[cols="2,1,1"]
-|===
-|System/URL |Username |Password
+* Username: [.notranslate]#{user}#
+* Password: [.notranslate]#{password}#
 
-|{openshift_console_url}[OpenShift Console^] |`{bastion_ssh_user_name}` |`{bastion_ssh_password}`
-|===
+NOTE: All environment details and credentials are available in the Demo Platform email and in the Demo Platform My Services page.
 
 == Pre-Demo Checklist
 
-Complete the xref:00-initial-setup.adoc[⚙ Initial Setup] guide *before* any customer-facing presentation. Then verify the following immediately before going live:
+Provisioning already installs the logging and observability stack. Use xref:00-initial-setup.adoc[⚙ Initial Setup] to confirm each component, and follow a section's manual steps only when that check fails. Then verify the following immediately before going live:
 
 === Environment health
 
 * [ ] Console is reachable and the cluster is fully healthy (green status on the Main Dashboard)
-* [ ] Developer perspective is enabled — the perspective switcher shows *Developer* as an option (requires the `oc patch` in Initial Setup Step 4)
+* [ ] Developer perspective is enabled — the perspective switcher shows *Developer* as an option (see xref:00-initial-setup.adoc#developer-perspective[Developer perspective])
 * [ ] OpenShift Virtualization Operator reports `Succeeded` (required for Virtualization perspective)
 * [ ] Red Hat ACM Operator reports `Succeeded` (required for Fleet Management perspective)
 * [ ] Web Terminal Operator reports `Succeeded` and the terminal icon appears in the top-right toolbar
@@ -87,7 +85,7 @@ Complete the xref:00-initial-setup.adoc[⚙ Initial Setup] guide *before* any cu
 == Troubleshooting Common Issues
 
 * *Developer perspective or Helm Charts filter not visible in the catalog*
-** Run the Developer perspective patch from xref:00-initial-setup.adoc[Initial Setup Step 4], then hard-refresh the console (Ctrl+Shift+R)
+** Enable it from xref:00-initial-setup.adoc#developer-perspective[Developer perspective], then hard-refresh the console (Ctrl+Shift+R)
 * *Grafana instance stuck in `Pending`*
 ** Check that the `grafana-demo` namespace was selected at install time and that the Operator CSV shows `Succeeded`
 ** When creating the instance, use YAML view and omit `spec.external` entirely — that field is for connecting to an existing Grafana Cloud instance
@@ -102,15 +100,15 @@ Complete the xref:00-initial-setup.adoc[⚙ Initial Setup] guide *before* any cu
 * *Console stays unavailable after deleting the `console` Deployment (Self-Healing demo)*
 ** Check `oc get clusteroperator console` — a `Progressing` condition is expected; the Console Operator will recreate it within 60–90 seconds
 * *No custom metrics or alerts appear for your namespace*
-** Confirm User Workload Monitoring is enabled — see xref:00-initial-setup.adoc[Initial Setup Step 5]
+** Confirm User Workload Monitoring is enabled — see xref:00-initial-setup.adoc#user-workload-monitoring[User Workload Monitoring]
 * *`LokiStack` stays in `Pending` or `Warning` state*
 ** Confirm the `logging-loki-s3` secret values match the MinIO service name, port, and credentials, and that the chosen `storageClassName` exists
 * *No collector pods after applying `ClusterLogForwarder`*
 ** The CLF was likely applied before its prerequisites existed. Delete it with `oc delete clusterlogforwarder instance -n openshift-logging` and reapply after all prerequisites are in place
 * *Collector pods are `Running` but logs do not appear in Observe → Logs*
-** Check `oc logs -n openshift-logging -l app.kubernetes.io/name=collector --tail=20` for SSL errors; if present, the `lokistack-gateway-ca-bundle` ConfigMap is missing — follow the logging chapter setup reference
-* *Chapter 5 components are under heavy resource pressure on SNO*
-** LokiStack, MinIO, and the COO together have a significant footprint on a single node. Treat Chapter 5's logging and correlation sections as optional if the environment is resource-constrained
+** Check `oc logs -n openshift-logging -l app.kubernetes.io/instance=instance --tail=20` for TLS errors. If they appear, the `lokistack-gateway-ca-bundle` ConfigMap is empty — follow xref:00-initial-setup.adoc#log-collector[Log collector and ClusterLogForwarder]
+* *Chapter 5 pods stay `Pending`*
+** LokiStack, MinIO, and the Cluster Observability Operator have a noticeable footprint. On this 3-node compact cluster they should schedule. If pods remain `Pending` for memory or CPU, treat the logging and correlation sections as optional.
 
 == Follow-up Resources
 

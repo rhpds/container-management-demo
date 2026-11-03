@@ -18,7 +18,7 @@ NOTE: The Cluster Observability Operator ships some capabilities as Technology P
 
 [NOTE]
 ====
-*Pre-demo requirement:* The Cluster Observability Operator and all three UIPlugins (monitoring, logging, troubleshooting-panel) must be installed and in `Available` state before this section. See xref:00-initial-setup.adoc[Initial Setup] for step-by-step instructions. After applying the plugins, do a hard refresh of the console (Ctrl+Shift+R) to activate the Troubleshooting Panel UI.
+*Pre-demo requirement:* The Cluster Observability Operator and the three UIPlugins (`monitoring`, `logging`, `troubleshooting-panel`) are installed during provisioning. Confirm they are `Available` with xref:00-initial-setup.adoc#observability-plugins[Initial Setup] before this section. Hard-refresh the console (Ctrl+Shift+R) so *Observe → Logs* and the Troubleshooting Panel load, even when the plugins were already `Available`.
 ====
 
 == The value of correlation: before and after
