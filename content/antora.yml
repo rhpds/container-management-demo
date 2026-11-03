@@ -14,5 +14,13 @@ asciidoc:
     bastion_ssh_user_name: lab-user
     bastion_ssh_password: password
     ssh_user: lab-user
-    openshift_console_url: https://console-openshift-console.apps.cluster-abc123.ocpv00.rhdp.net
-    openshift_cluster_ingress_domain: apps.cluster-abc123.ocpv00.rhdp.net
+    openshift_console_url: https://console-openshift-console.apps.cluster-abc123.dyn.redhatworkshops.io
+    openshift_cluster_ingress_domain: apps.cluster-abc123.dyn.redhatworkshops.io
+    keycloak_admin_console: https://sso.apps.cluster-abc123.dyn.redhatworkshops.io
+    keycloak_admin_password: password
+    keycloak_admin_user: temp-admin
+    openshift_api_server_url: https://api.cluster-abc123.dyn.redhatworkshops.io:6443
+    openshift_cluster_admin_password: password
+    openshift_cluster_admin_username: admin
+    openshift_cluster_console_url: https://console-openshift-console.apps.cluster-abc123.dyn.redhatworkshops.io
+    openshift_gitops_server: https://openshift-gitops-server-openshift-gitops.apps.cluster-abc123.dyn.redhatworkshops.io

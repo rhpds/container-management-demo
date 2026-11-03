@@ -53,10 +53,10 @@ Use the table below to plan your session:
 
 == Credentials
 
-Log into OpenShift with the following credentials:
+Log into {openshift_console_url}[OpenShift Console^] with the following credentials:
 
-* Username: [.notranslate]#{user}#
-* Password: [.notranslate]#{password}#
+* Username: {openshift_cluster_admin_username}
+* Password: {openshift_cluster_admin_password}
 
 NOTE: All environment details and credentials are available in the Demo Platform email and in the Demo Platform My Services page.
 
