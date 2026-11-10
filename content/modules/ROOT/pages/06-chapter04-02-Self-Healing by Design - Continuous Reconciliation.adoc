@@ -23,13 +23,13 @@ This is the operational story worth making explicit to a technical audience: you
 
 This demo runs on a *3-node compact cluster* — all three nodes serve as both control plane and worker. This topology lets you demonstrate node-level failures and rolling OS changes with *zero downtime*, because workloads always have two surviving nodes to run on.
 
-=== The OpenShift difference vs. vanilla Kubernetes
+=== The OpenShift difference vs. plain Kubernetes
 
 Before the demos, set the context once:
 
 [TIP]
 ====
-*"On a vanilla Kubernetes cluster, if you delete a system component — the dashboard deployment, the ingress controller — it stays deleted. Nobody brings it back unless someone runs `kubectl apply` again. On OpenShift, every platform component is owned by an Operator that watches it continuously. The desired state is stored, and the platform repairs itself. This is why OpenShift is an opinionated platform and not just a packaged Kubernetes distribution."*
+*"On a plain Kubernetes cluster, if you delete a system component — the dashboard deployment, the ingress controller — it stays deleted. Nobody brings it back unless someone runs `kubectl apply` again. On OpenShift, every platform component is owned by an Operator that watches it continuously. The desired state is stored, and the platform repairs itself. This is why OpenShift is an opinionated platform and not just a packaged Kubernetes distribution."*
 ====
 
 === Example 1: Break a platform component — watch it come back

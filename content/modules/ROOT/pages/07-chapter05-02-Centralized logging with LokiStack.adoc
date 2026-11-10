@@ -34,7 +34,7 @@ TIP: The Loki Operator ships a purpose-built sizing profile called *`1x.demo`*. 
 
 [TIP]
 ====
-*"On vanilla Kubernetes, there is no built-in log aggregation. You assemble your own stack — Fluentd or Fluent Bit, Elasticsearch or Loki, Kibana or Grafana — and you maintain it. On OpenShift, this view was available the moment the logging stack was deployed. No custom dashboards, no index patterns, no log pipeline YAML to maintain by hand."*
+*"On plain Kubernetes, there is no built-in log aggregation. You assemble your own stack — Fluentd or Fluent Bit, Elasticsearch or Loki, Kibana or Grafana — and you maintain it. On OpenShift, this view was available the moment the logging stack was deployed. No custom dashboards, no index patterns, no log pipeline YAML to maintain by hand."*
 ====
 
 === Step 2: Find logs from a deleted pod

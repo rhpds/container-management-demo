@@ -14,7 +14,7 @@ Security Context Constraints (SCCs) are an OpenShift-specific security mechanism
 
 Think of RBAC as controlling who can manipulate API objects (e.g., "Can this user create a pod?"), while SCCs control what that pod is allowed to do to the underlying Linux host once it gets created (e.g., "Can this pod run as root or access the host's file system?").
 
-This built-in enforcement is exactly why OpenShift is considered "secure by default" compared to vanilla Kubernetes.
+This built-in enforcement is exactly why OpenShift is considered "secure by default" compared to plain Kubernetes.
 
 *What SCCs Control*
 

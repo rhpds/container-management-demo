@@ -10,7 +10,7 @@ Demonstrate the Observe perspective, a live PromQL query, and a custom alert fir
 
 == Introduction
 
-OpenShift Container Platform includes a *fully integrated monitoring stack* based on Prometheus, Alertmanager, and Thanos Querier. Unlike vanilla Kubernetes, where you have to source, install, and wire together your own metrics pipeline, monitoring is a day-1 capability of every cluster — including compact, resource-constrained clusters like the *Single Node OpenShift (SNO)* environment used in this demo.
+OpenShift Container Platform includes a *fully integrated monitoring stack* based on Prometheus, Alertmanager, and Thanos Querier. Unlike plain Kubernetes, where you have to source, install, and wire together your own metrics pipeline, monitoring is a day-1 capability of every cluster — including compact, resource-constrained clusters like the *Single Node OpenShift (SNO)* environment used in this demo.
 
 The stack is split into two layers:
 
@@ -35,7 +35,7 @@ NOTE: On a Single Node OpenShift cluster, control plane, infrastructure, and wor
 
 [TIP]
 ====
-*"On vanilla Kubernetes there is no built-in dashboard. You provision Prometheus separately, deploy Grafana on top of it, write your own dashboards, and maintain them as the platform evolves. On OpenShift, this is day-1 infrastructure — it is already running, already wired to the cluster, already producing actionable data. Your operations team has full visibility before they deploy their first workload."*
+*"On plain Kubernetes there is no built-in dashboard. You provision Prometheus separately, deploy Grafana on top of it, write your own dashboards, and maintain them as the platform evolves. On OpenShift, this is day-1 infrastructure — it is already running, already wired to the cluster, already producing actionable data. Your operations team has full visibility before they deploy their first workload."*
 ====
 
 === Example 2: Querying metrics with PromQL

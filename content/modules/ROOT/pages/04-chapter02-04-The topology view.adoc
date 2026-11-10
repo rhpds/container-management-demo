@@ -20,7 +20,7 @@ This demo uses the *Online Boutique* application deployed in the previous sectio
 . Select the project where the Online Boutique was deployed from the project dropdown.
 . The full microservice graph appears: all 11 services are automatically grouped into a single *online-boutique* application card because they share the `app.kubernetes.io/part-of` label.
 +
-NOTE: This grouping is an OpenShift concept — vanilla Kubernetes has no notion of an "Application". Workloads there are isolated objects with no visual or logical grouping out of the box.
+NOTE: This grouping is an OpenShift concept — plain Kubernetes has no notion of an "Application". Workloads there are isolated objects with no visual or logical grouping out of the box.
 
 ==== Step 2 — Scale a service live from the graph
 
